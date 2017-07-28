@@ -85,29 +85,29 @@ namespace com.PixelismGames.WhistleStop
             _stopwatch.Start();
         }
 
-        public void Callback(IntPtr videoBufferAddress, int width, int height, int stride)
+        public void Callback(IntPtr frameBufferAddress, int width, int height, int stride)
         {
             Texture2D videoTexture = new Texture2D(width, height, TextureFormat.RGB565, false);
 
             int rowSize = width * sizeof(short);
             if (rowSize == stride)
             {
-                videoTexture.LoadRawTextureData(videoBufferAddress, (height * stride));
+                videoTexture.LoadRawTextureData(frameBufferAddress, (height * stride));
             }
             else
             {
                 // if the data also contains the back buffer, we have to rip out just the first frame
-                int newVideoBufferSize = height * width * sizeof(short);
-                byte[] newVideoBuffer = new byte[newVideoBufferSize];
+                int newFrameBufferSize = height * rowSize;
+                byte[] newFrameBuffer = new byte[newFrameBufferSize];
 
                 for (int i = 0; i < height; i++)
                 {
-                    IntPtr rowAddress = (IntPtr)((int)videoBufferAddress + (i * stride));
+                    IntPtr rowAddress = (IntPtr)((int)frameBufferAddress + (i * stride));
                     int newRowIndex = i * rowSize;
-                    Marshal.Copy(rowAddress, newVideoBuffer, newRowIndex, rowSize);
+                    Marshal.Copy(rowAddress, newFrameBuffer, newRowIndex, rowSize);
                 }
 
-                videoTexture.LoadRawTextureData(newVideoBuffer);
+                videoTexture.LoadRawTextureData(newFrameBuffer);
             }
 
             videoTexture.Apply();

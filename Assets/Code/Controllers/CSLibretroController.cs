@@ -8,8 +8,10 @@ namespace com.PixelismGames.WhistleStop
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
+        private const float PIXELS_PER_UNIT = 1f;
+
         private const string DLL_NAME = "snes9x_libretro.dll";
-        //private const string DLL_NAME = "nestopia_libretro.dll";
+        //private const string DLL_NAME = "fceumm_libretro.dll";
         //private const string DLL_NAME = "gambatte_libretro.dll";
 
         private const string ROM_NAME = "smw.sfc";
@@ -31,8 +33,10 @@ namespace com.PixelismGames.WhistleStop
         public void Start()
         {
             _core = new Core(DLL_NAME);
+
             _core.LogHandler += logHandler;
             _core.VideoFrameHandler += videoFrameHandler;
+
             _core.Load(ROM_NAME);
         }
 
@@ -80,7 +84,7 @@ namespace com.PixelismGames.WhistleStop
 
             if (_screenRenderer.sprite == null)
             {
-                _screenRenderer.sprite = Sprite.Create(videoFrameTexture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), 1f);
+                _screenRenderer.sprite = Sprite.Create(videoFrameTexture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), PIXELS_PER_UNIT);
                 _screenRenderer.sprite.texture.filterMode = FilterMode.Point;
             }
             else

@@ -132,10 +132,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 480151233}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82ad220327cc3284d9c53fce83e13985, type: 3}
+  m_Script: {fileID: 11500000, guid: 8112f37513604df4eb797572ce30f4c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sprite: {fileID: 1096175436}
+  Screen: {fileID: 1096175436}
 --- !u!4 &480151235
 Transform:
   m_ObjectHideFlags: 0

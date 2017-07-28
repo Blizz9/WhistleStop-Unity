@@ -1,15 +1,12 @@
-﻿using System;
+﻿using com.PixelismGames.CSLibretro.Libretro;
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using UnityEngine;
 
-namespace CSLibretro
+namespace com.PixelismGames.CSLibretro
 {
-    // TODO : double check all delegate prototypes against libretro.h and make sure they simple good and as simple as possible (not trusting libretro.cs)
-    // TODO : rename 'Prototype' to 'Signature'?
-    // TODO : figure out if I can find the PC, ROM, and whether I can write to it or not
-    // TODO : move this over to Unity
     public class Wrapper
     {
         private const string DLL_NAME = "snes9x_libretro.dll";
@@ -20,23 +17,23 @@ namespace CSLibretro
         //private const string ROM_NAME = "smb.nes";
         //private const string ROM_NAME = "sml.gb";
         
-        private APIVersionPrototype _apiVersion;
-        private GetMemoryDataPrototype _getMemoryData;
-        private GetMemorySizePrototype _getMemorySize;
-        private GetSystemAVInfoPrototype _getSystemAVInfo;
-        private GetSystemInfoPrototype _getSystemInfo;
-        private Action _init;
-        private LoadGamePrototype _loadGame;
-        private RunPrototype _run;
-        private SerializePrototype _serialize;
-        private SerializeSizePrototype _serializeSize;
-        private SetAudioSamplePrototype _setAudioSample;
-        private SetAudioSampleBatchPrototype _setAudioSampleBatch;
-        private SetEnvironmentPrototype _setEnvironment;
-        private SetInputPollPrototype _setInputPoll;
-        private SetInputStatePrototype _setInputState;
-        private SetVideoRefreshPrototype _setVideoRefresh;
-        private UnserializePrototype _unserialize;
+        private APIVersionSignature _apiVersion;
+        private GetMemoryDataSignature _getMemoryData;
+        private GetMemorySizeSignature _getMemorySize;
+        private GetSystemAVInfoSignature _getSystemAVInfo;
+        private GetSystemInfoSignature _getSystemInfo;
+        private InitSignature _init;
+        private LoadGameSignature _loadGame;
+        private RunSignature _run;
+        private SerializeSignature _serialize;
+        private SerializeSizeSignature _serializeSize;
+        private SetAudioSampleSignature _setAudioSample;
+        private SetAudioSampleBatchSignature _setAudioSampleBatch;
+        private SetEnvironmentSignature _setEnvironment;
+        private SetInputPollSignature _setInputPoll;
+        private SetInputStateSignature _setInputState;
+        private SetVideoRefreshSignature _setVideoRefresh;
+        private UnserializeSignature _unserialize;
 
         private AudioSampleHandler _audioSampleHandler;
         private AudioSampleBatchHandler _audioSampleBatchHandler;
@@ -57,34 +54,31 @@ namespace CSLibretro
         public SystemInfo SystemInfo;
         public SystemAVInfo SystemAVInfo;
 
-        private Action<IntPtr, int, int, int> _callback;
         //public Wrapper(Action<Bitmap> frameCallback, Action<List<Tuple<Key, int, bool>>> inputCallback)
-        public Wrapper(Action<IntPtr, int, int, int> callback)
+        public Wrapper()
         {
             //_frameCallback = frameCallback;
             //_inputCallback = inputCallback;
 
-            _callback = callback;
-
             _libretroDLL = Win32API.LoadLibrary(DLL_NAME);
 
-            _apiVersion = getDelegate<APIVersionPrototype>("retro_api_version");
-            _getMemoryData = getDelegate<GetMemoryDataPrototype>("retro_get_memory_data");
-            _getMemorySize = getDelegate<GetMemorySizePrototype>("retro_get_memory_size");
-            _getSystemAVInfo = getDelegate<GetSystemAVInfoPrototype>("retro_get_system_av_info");
-            _getSystemInfo = getDelegate<GetSystemInfoPrototype>("retro_get_system_info");
-            _init = getDelegate<Action>("retro_init");
-            _loadGame = getDelegate<LoadGamePrototype>("retro_load_game");
-            _run = getDelegate<RunPrototype>("retro_run");
-            _serialize = getDelegate<SerializePrototype>("retro_serialize");
-            _serializeSize = getDelegate<SerializeSizePrototype>("retro_serialize_size");
-            _setAudioSample = getDelegate<SetAudioSamplePrototype>("retro_set_audio_sample");
-            _setAudioSampleBatch = getDelegate<SetAudioSampleBatchPrototype>("retro_set_audio_sample_batch");
-            _setEnvironment = getDelegate<SetEnvironmentPrototype>("retro_set_environment");
-            _setInputPoll = getDelegate<SetInputPollPrototype>("retro_set_input_poll");
-            _setInputState = getDelegate<SetInputStatePrototype>("retro_set_input_state");
-            _setVideoRefresh = getDelegate<SetVideoRefreshPrototype>("retro_set_video_refresh");
-            _unserialize = getDelegate<UnserializePrototype>("retro_unserialize");
+            _apiVersion = getDelegate<APIVersionSignature>("retro_api_version");
+            _getMemoryData = getDelegate<GetMemoryDataSignature>("retro_get_memory_data");
+            _getMemorySize = getDelegate<GetMemorySizeSignature>("retro_get_memory_size");
+            _getSystemAVInfo = getDelegate<GetSystemAVInfoSignature>("retro_get_system_av_info");
+            _getSystemInfo = getDelegate<GetSystemInfoSignature>("retro_get_system_info");
+            _init = getDelegate<InitSignature>("retro_init");
+            _loadGame = getDelegate<LoadGameSignature>("retro_load_game");
+            _run = getDelegate<RunSignature>("retro_run");
+            _serialize = getDelegate<SerializeSignature>("retro_serialize");
+            _serializeSize = getDelegate<SerializeSizeSignature>("retro_serialize_size");
+            _setAudioSample = getDelegate<SetAudioSampleSignature>("retro_set_audio_sample");
+            _setAudioSampleBatch = getDelegate<SetAudioSampleBatchSignature>("retro_set_audio_sample_batch");
+            _setEnvironment = getDelegate<SetEnvironmentSignature>("retro_set_environment");
+            _setInputPoll = getDelegate<SetInputPollSignature>("retro_set_input_poll");
+            _setInputState = getDelegate<SetInputStateSignature>("retro_set_input_state");
+            _setVideoRefresh = getDelegate<SetVideoRefreshSignature>("retro_set_video_refresh");
+            _unserialize = getDelegate<UnserializeSignature>("retro_unserialize");
 
             _audioSampleHandler = new AudioSampleHandler(audioSampleCallback);
             _audioSampleBatchHandler = new AudioSampleBatchHandler(audioSampleBatchCallback);
@@ -93,7 +87,7 @@ namespace CSLibretro
             _inputStateHandler = new InputStateHandler(inputStateCallback);
             _videoRefreshHandler = new VideoRefreshHandler(videoRefreshCallback);
 
-            Debug.Log(_apiVersion());
+            Debug.WriteLine(_apiVersion());
 
             _setEnvironment(_environmentHandler);
             _setVideoRefresh(_videoRefreshHandler);
@@ -104,14 +98,14 @@ namespace CSLibretro
 
             _init();
 
-            GameInfo gameInfo = new GameInfo() { Path = ROM_NAME, Data = IntPtr.Zero, Size = UIntPtr.Zero, Meta = null };
+            GameInfo gameInfo = new GameInfo() { Path = ROM_NAME, Data = IntPtr.Zero, Size = 0, Meta = null };
             _loadGame(ref gameInfo);
 
             SystemInfo = new SystemInfo();
             _getSystemInfo(out SystemInfo);
-            SystemInfo.LibraryName = Marshal.PtrToStringAnsi(SystemInfo.LibraryNamePointer);
-            SystemInfo.LibraryVersion = Marshal.PtrToStringAnsi(SystemInfo.LibraryVersionPointer);
-            SystemInfo.ValidExtensions = Marshal.PtrToStringAnsi(SystemInfo.ValidExtensionsPointer);
+            SystemInfo.LibraryName = Marshal.PtrToStringAnsi(SystemInfo.LibraryNameAddress);
+            SystemInfo.LibraryVersion = Marshal.PtrToStringAnsi(SystemInfo.LibraryVersionAddress);
+            SystemInfo.ValidExtensions = Marshal.PtrToStringAnsi(SystemInfo.ValidExtensionsAddress);
 
             SystemAVInfo = new SystemAVInfo();
             _getSystemAVInfo(out SystemAVInfo);
@@ -123,15 +117,15 @@ namespace CSLibretro
 
         public void Run()
         {
-            //byte[] saveState = new byte[_serializeSize()];
+            byte[] saveState = new byte[_serializeSize()];
 
-            //double targetNanoseconds = 1 / SystemAVInfo.Timing.FPS * 1000000000;
-            //double leftoverNanoseconds = 0;
+            double targetNanoseconds = 1 / SystemAVInfo.Timing.FPS * 1000000000;
+            double leftoverNanoseconds = 0;
 
-            //while (FrameCount <= 78000)
-            //{
-            //    System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-            //    stopwatch.Start();
+            while (FrameCount <= 78000)
+            {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
 
                 _run();
 
@@ -238,19 +232,19 @@ namespace CSLibretro
                 //    Marshal.Copy(ramPointer, memory, 0, (int)memorySize);
                 //}
 
-                //stopwatch.Stop();
+                stopwatch.Stop();
 
-                //double elapsedNanoseconds = ((double)stopwatch.ElapsedTicks / (double)System.Diagnostics.Stopwatch.Frequency) * 1000000000;
-                //leftoverNanoseconds += targetNanoseconds - elapsedNanoseconds;
-                //if (leftoverNanoseconds > 0)
-                //{
-                //    Thread.Sleep((int)(leftoverNanoseconds / 1000000));
-                //    leftoverNanoseconds %= 1000000;
-                //}
-                //else
-                //{
-                //    leftoverNanoseconds = 0;
-                //}
+                double elapsedNanoseconds = ((double)stopwatch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000000000;
+                leftoverNanoseconds += targetNanoseconds - elapsedNanoseconds;
+                if (leftoverNanoseconds > 0)
+                {
+                    Thread.Sleep((int)(leftoverNanoseconds / 1000000));
+                    leftoverNanoseconds %= 1000000;
+                }
+                else
+                {
+                    leftoverNanoseconds = 0;
+                }
 
                 //Debug.WriteLine("Made it here: " + FrameCount);
 
@@ -258,7 +252,7 @@ namespace CSLibretro
                 //double sleepNanoseconds = targetNanoseconds - elapsedNanoseconds;
                 //if (sleepNanoseconds > 0)
                 //    Thread.Sleep((int)(sleepNanoseconds / 1000000));
-            //}
+            }
         }
 
         #endregion
@@ -270,9 +264,10 @@ namespace CSLibretro
             //Debug.WriteLine("Audio Sample");
         }
 
-        private void audioSampleBatchCallback(IntPtr data, UIntPtr frames)
+        private uint audioSampleBatchCallback(IntPtr data, uint frames)
         {
             //Debug.WriteLine("Audio Sample Batch");
+            return (0);
         }
 
         private bool environmentCallback(uint command, IntPtr data)
@@ -327,15 +322,15 @@ namespace CSLibretro
             return (0);
         }
 
-        private static void logCallback(int level, IntPtr fmt, params IntPtr[] arguments)
+        private static void logCallback(LogLevel level, string fmt, params IntPtr[] arguments)
         {
-            Debug.Log("Log");
+            Debug.WriteLine("Log");
 
             StringBuilder logMessage = new StringBuilder(256);
 
             while (true)
             {
-                int length = Win32API._snprintf(logMessage, new IntPtr(logMessage.Capacity), fmt, arguments);
+                int length = Win32API._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arguments);
 
                 if ((length <= 0) || (length >= logMessage.Capacity))
                 {
@@ -347,23 +342,32 @@ namespace CSLibretro
                 break;
             } while (logMessage.Length >= logMessage.Capacity);
 
-            Debug.Log(logMessage.ToString());
+            Debug.WriteLine(logMessage.ToString());
         }
 
-        private void videoRefreshCallback(IntPtr data, uint width, uint height, UIntPtr pitch)
+        private void videoRefreshCallback(IntPtr data, uint width, uint height, uint pitch)
         {
-            //if (FrameCount % 60 == 0)
-            //{
+            int rowSize = (int)width * sizeof(short); // this will be different depending on pixel format
+
+            int size = (int)height * rowSize;
+            byte[] bytes = new byte[size];
+
+            for (int i = 0; i < height; i++)
+            {
+                IntPtr rowAddress = (IntPtr)((long)data + (i * (int)pitch));
+                int newRowIndex = i * rowSize;
+                Marshal.Copy(rowAddress, bytes, newRowIndex, rowSize);
+            }
+
+            GCHandle pinnedBytes = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            IntPtr pinnedBytesAddress = pinnedBytes.AddrOfPinnedObject();
+
             //Bitmap bitmap = new Bitmap((int)width, (int)height, (int)pitch, System.Drawing.Imaging.PixelFormat.Format16bppRgb565, data);
-            //bitmap.Save("output" + FrameCount / 60 + ".png", ImageFormat.Png);
+            //Bitmap bitmap = new Bitmap((int)width, (int)height, (int)rowSize, System.Drawing.Imaging.PixelFormat.Format16bppRgb565, pinnedBytesAddress);
+
+            pinnedBytes.Free();
+
             //_frameCallback(bitmap);
-            //}
-            //Debug.Log("Video Callback");
-
-            _callback(data, (int)width, (int)height, (int)pitch);
-
-            //Texture2D temp = new Texture2D((int)width, (int)height, TextureFormat.RGB565, false);
-            //temp.LoadRawTextureData(data, (int)pitch * (int)height);
         }
 
         #endregion

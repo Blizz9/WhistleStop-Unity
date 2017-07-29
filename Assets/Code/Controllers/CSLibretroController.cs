@@ -10,12 +10,12 @@ namespace com.PixelismGames.WhistleStop
     {
         private const float PIXELS_PER_UNIT = 1f;
 
-        private const string DLL_NAME = "snes9x_libretro.dll";
-        //private const string DLL_NAME = "fceumm_libretro.dll";
+        //private const string DLL_NAME = "snes9x_libretro.dll";
+        private const string DLL_NAME = "fceumm_libretro.dll";
         //private const string DLL_NAME = "gambatte_libretro.dll";
 
-        private const string ROM_NAME = "smw.sfc";
-        //private const string ROM_NAME = "smb.nes";
+        //private const string ROM_NAME = "smw.sfc";
+        private const string ROM_NAME = "smb.nes";
         //private const string ROM_NAME = "sml.gb";
 
         public GameObject Screen; // move this out to a global singleton

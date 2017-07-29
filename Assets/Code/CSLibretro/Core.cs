@@ -11,8 +11,7 @@ using System.Threading;
 namespace com.PixelismGames.CSLibretro
 {
     // TODO : figure out if I can find the PC, ROM, and whether I can write to it or not (might be done with Memory maps?)
-    // TODO : figure out how to catch exceptions from c++ code
-    // TODO : fix log method, I know it doesn't quite work
+    // TODO : change environment handling to a map and breakout into individual methods
     public class Core
     {
         private APIVersionSignature _apiVersion;
@@ -382,7 +381,7 @@ namespace com.PixelismGames.CSLibretro
                     data = Marshal.StringToHGlobalAnsi(null);
                     return (true);
 
-                case EnvironmentCommand.SetMemoryMaps:
+                case EnvironmentCommand.SetMemoryMaps: // not saved anywhere
                     return (true);
 
                 case EnvironmentCommand.SetGeometry:

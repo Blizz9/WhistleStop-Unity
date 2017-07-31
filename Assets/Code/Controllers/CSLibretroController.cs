@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using com.PixelismGames.CSLibretro;
 using com.PixelismGames.CSLibretro.Libretro;
 using UnityEngine;
@@ -14,12 +15,12 @@ namespace com.PixelismGames.WhistleStop
     {
         private const float PIXELS_PER_UNIT = 1f;
 
-        //private const string DLL_NAME = "snes9x_libretro.dll";
-        private const string DLL_NAME = "fceumm_libretro.dll";
+        private const string DLL_NAME = "snes9x_libretro.dll";
+        //private const string DLL_NAME = "fceumm_libretro.dll";
         //private const string DLL_NAME = "gambatte_libretro.dll";
 
-        //private const string ROM_NAME = "smw.sfc";
-        private const string ROM_NAME = "smb.nes";
+        private const string ROM_NAME = "smw.sfc";
+        //private const string ROM_NAME = "smb.nes";
         //private const string ROM_NAME = "sml.gb";
 
         public GameObject Screen; // move this out to a global singleton
@@ -61,7 +62,7 @@ namespace com.PixelismGames.WhistleStop
 
             AudioConfiguration audioConfiguration = AudioSettings.GetConfiguration();
             //audioConfiguration.sampleRate = (int)_core.AudioSampleRate;
-            audioConfiguration.sampleRate = 31550;
+            audioConfiguration.sampleRate = 31550; // should be _core.AudioSampleRate but this seems to match better, found by trial and error
             AudioSettings.Reset(audioConfiguration);
 
             Debug.Log(AudioSettings.outputSampleRate);
@@ -75,8 +76,8 @@ namespace com.PixelismGames.WhistleStop
         {
             StartCoroutine(clockFrame());
 
-            GameObject.Find("Unders").GetComponent<Text>().text = "Unders: " + Unders;
-            GameObject.Find("Extras").GetComponent<Text>().text = "Extras: " + Extras;
+            //GameObject.Find("Unders").GetComponent<Text>().text = "Unders: " + Unders;
+            //GameObject.Find("Extras").GetComponent<Text>().text = "Extras: " + Extras;
 
             List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
             foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
@@ -91,6 +92,7 @@ namespace com.PixelismGames.WhistleStop
             _core.RunFrame();
         }
 
+        // the fickle timing of this makes the exact timing of audio in emulators very tough; another solution may need to be found
         public void OnAudioFilterRead(float[] data, int channels)
         {
             int sampleCount = data.Length;
@@ -104,25 +106,21 @@ namespace com.PixelismGames.WhistleStop
                 }
                 else if (_audioSampleBuffer.Count >= sampleCount)
                 {
-                    sampleBuffer = new float[sampleCount];
+                    // this is the easy case, the core has provided us with enough samples, just copy them over
                     Array.Copy(_audioSampleBuffer.ToArray(), data, sampleCount);
                     _audioSampleBuffer.RemoveRange(0, sampleCount);
                     return;
                 }
-                else
-                {
-                    //return;
 
-                    //Array.Copy(_audioSampleBuffer.ToArray(), data, _audioSampleBuffer.Count);
-                    //_audioSampleBuffer.RemoveRange(0, _audioSampleBuffer.Count);
-                    //return;
-
-                    sampleBuffer = new float[_audioSampleBuffer.Count];
-                    Array.Copy(_audioSampleBuffer.ToArray(), sampleBuffer, _audioSampleBuffer.Count);
-                    _audioSampleBuffer.RemoveRange(0, _audioSampleBuffer.Count);
-                    Unders++;
-                }
+                // the core has not given us enough samples, copy what is there and attempt to smooth the results
+                sampleBuffer = new float[_audioSampleBuffer.Count];
+                Array.Copy(_audioSampleBuffer.ToArray(), sampleBuffer, _audioSampleBuffer.Count);
+                _audioSampleBuffer.RemoveRange(0, _audioSampleBuffer.Count);
             }
+
+            Unders++;
+
+            // smooth the data by duping (averaging) every X samples so that we have enough samples
 
             int frameCount = data.Length / channels;
             int bufferFrameCount = sampleBuffer.Length / channels;
@@ -130,26 +128,20 @@ namespace com.PixelismGames.WhistleStop
             double step = (double)frameCount / ((double)frameCount - (double)bufferFrameCount);
             double start = step / 2;
 
-            //Debug.Log(frameCount + " | " + bufferFrameCount + " | " + (frameCount - bufferFrameCount) + " | " + step + " | " + start);
-
-            List<int> roundedFrames = new List<int>();
+            List<int> generatedFrames = new List<int>();
             double cumulativeStep = start;
             while (cumulativeStep < frameCount)
             {
-                roundedFrames.Add((int)Math.Floor(cumulativeStep));
+                generatedFrames.Add((int)Math.Floor(cumulativeStep));
                 cumulativeStep += step;
             }
-
-            //Debug.Log((frameCount - bufferFrameCount) + " | " + roundedFrames.Count + " | " + System.Threading.Thread.CurrentThread.ManagedThreadId);
-
-            //Debug.Log(sampleBuffer.Length + " | " + frameCount + " | " + bufferFrameCount + " | " + (frameCount - bufferFrameCount) + " | " + roundedFrames.Count);
 
             int bufferIndex = 0;
             for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
             {
                 int sampleIndex = frameIndex * channels;
 
-                if (roundedFrames.Contains(frameIndex))
+                if (generatedFrames.Contains(frameIndex))
                 {
                     for (int i = 0; i < channels; i++)
                     {

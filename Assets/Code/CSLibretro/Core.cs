@@ -63,12 +63,12 @@ namespace com.PixelismGames.CSLibretro
 
         public PixelFormat PixelFormat = PixelFormat.Unknown;
         public List<Variable> Variables;
-        public List<InputDescriptor> Inputs;
+        public List<Input> Inputs;
 
         public event Action<short, short> AudioSampleHandler;
-        public event Action AudioSampleBatchHandler;
+        public event Action<short[]> AudioSampleBatchHandler;
         public event Action InputPollHandler;
-        public event Action InputStateHandler;
+        public event Func<int, Device, int, short> InputStateHandler;
         public event Action<LogLevel, string> LogHandler;
         public event Action<int, int, byte[]> VideoFrameHandler;
 
@@ -123,7 +123,7 @@ namespace com.PixelismGames.CSLibretro
             _variablesDirty = true;
 
             Variables = new List<Variable>();
-            Inputs = new List<InputDescriptor>();
+            Inputs = new List<Input>();
 
             _libretroDLLPath = libretroDLLPath;
             _libretroDLL = Win32API.LoadLibrary(libretroDLLPath);
@@ -225,6 +225,8 @@ namespace com.PixelismGames.CSLibretro
         public void RunFrame()
         {
             _run();
+
+            FrameCount++;
         }
 
         #endregion
@@ -293,16 +295,15 @@ namespace com.PixelismGames.CSLibretro
 
         private uint audioSampleBatchCallback(IntPtr data, uint frames)
         {
-            uint returnValue = 0;
-
             if (AudioSampleBatchHandler != null)
             {
-                returnValue = 0; // do stuff here presumably
+                short[] audioFrames = new short[frames * 2];
+                Marshal.Copy(data, audioFrames, 0, ((int)frames * 2));
 
-                AudioSampleBatchHandler();
+                AudioSampleBatchHandler(audioFrames);
             }
 
-            return (returnValue);
+            return (frames);
         }
 
         // build a way for the user of core to passthrough their choice of commands to handle
@@ -337,7 +338,7 @@ namespace com.PixelismGames.CSLibretro
                         InputDescriptor inputDescriptor = (InputDescriptor)Marshal.PtrToStructure(inputDescriptorAddress, typeof(InputDescriptor));
                         if (inputDescriptor.Description == null)
                             break;
-                        Inputs.Add(inputDescriptor);
+                        Inputs.Add(new Input(inputDescriptor));
                         inputDescriptorAddress = (IntPtr)((long)inputDescriptorAddress + Marshal.SizeOf(inputDescriptor));
                     }
                     return (true);
@@ -407,12 +408,10 @@ namespace com.PixelismGames.CSLibretro
         {
             short returnValue = 0;
 
-            if (InputStateHandler != null)
-            {
-                returnValue = 0; // do stuff here presumably
-
-                InputStateHandler();
-            }
+            if (InputStateHandler == null)
+                returnValue = Inputs.Where(i => (i.Port == (int)port) && (i.Device == (Device)device) && (i.RawInputID == (int)id)).First().Value;
+            else
+                returnValue = InputStateHandler((int)port, (Device)device, (int)id);
 
             return (returnValue);
         }

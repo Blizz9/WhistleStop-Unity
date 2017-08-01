@@ -55,7 +55,6 @@ namespace com.PixelismGames.CSLibretro
 
         private bool _variablesDirty;
 
-        private int _stateSize;
         private IntPtr _ramAddress;
         private int _ramSize;
 
@@ -65,6 +64,7 @@ namespace com.PixelismGames.CSLibretro
         public PixelFormat PixelFormat = PixelFormat.Unknown;
         public List<Variable> Variables;
         public List<Input> Inputs;
+        public int StateSize;
 
         public event Action<short, short> AudioSampleHandler;
         public event Action<short[]> AudioSampleBatchHandler;
@@ -198,7 +198,7 @@ namespace com.PixelismGames.CSLibretro
 
             _framePeriodNanoseconds = (long)(1000000000 / _systemAVInfo.Timing.FPS);
 
-            _stateSize = (int)_serializeSize();
+            StateSize = (int)_serializeSize();
             _ramAddress = _getMemoryData(MemoryType.RAM);
             _ramSize = (int)_getMemorySize(MemoryType.RAM);
         }
@@ -462,13 +462,23 @@ namespace com.PixelismGames.CSLibretro
 
         public void SaveState(string stateFilePath)
         {
-            byte[] state = new byte[_stateSize];
+            byte[] state = new byte[StateSize];
 
             GCHandle pinnedState = GCHandle.Alloc(state, GCHandleType.Pinned);
             _serialize(pinnedState.AddrOfPinnedObject(), (uint)state.Length);
             pinnedState.Free();
 
             File.WriteAllBytes(stateFilePath, state);
+        }
+
+        public bool SerializePassthrough(IntPtr data, uint size)
+        {
+            return (_serialize(data, size));
+        }
+
+        public bool UnserializePassthrough(IntPtr data, uint size)
+        {
+            return (_unserialize(data, size));
         }
 
         #endregion

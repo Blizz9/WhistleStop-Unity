@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using com.PixelismGames.CSLibretro;
 using com.PixelismGames.CSLibretro.Libretro;
 using UnityEngine;
@@ -10,6 +9,9 @@ using UnityEngine.UI;
 
 namespace com.PixelismGames.WhistleStop
 {
+    // TODO : Build a small UI for watching memory
+    // TODO : Implement singleton, linq to unity, and readonly for properties in editor
+    // TODO : Figure out why a build is crashing with NES
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
@@ -30,8 +32,9 @@ namespace com.PixelismGames.WhistleStop
         private List<float> _audioSampleBuffer;
         private object _audioSync;
 
-        //public int Unders = 0;
-        //public int Extras = 0;
+        // tracking data
+        private int _audioSmoothedCount;
+        private long _audioRemainingSamples;
 
         #region MonoBehaviour
 
@@ -62,15 +65,15 @@ namespace com.PixelismGames.WhistleStop
             AudioSettings.Reset(audioConfiguration);
 
             // this is required for OnAudioFilterRead to work and needs to be done after setting the AudioSettings.outputSampleRate
-            //gameObject.AddComponent<AudioSource>();
+            gameObject.AddComponent<AudioSource>();
         }
 
         public void Update()
         {
             StartCoroutine(clockFrame());
 
-            //GameObject.Find("Unders").GetComponent<Text>().text = "Unders: " + Unders;
-            //GameObject.Find("Extras").GetComponent<Text>().text = "Extras: " + Extras;
+            GameObject.Find("TimesSmoothed").GetComponent<Text>().text = "Times Smoothed: " + _audioSmoothedCount;
+            GameObject.Find("RemainingSamples").GetComponent<Text>().text = "Remaining Samples: " + _audioRemainingSamples;
 
             if (UnityEngine.Input.GetKeyDown(KeyCode.T))
                 _core.SaveState("game.ss");
@@ -89,6 +92,47 @@ namespace com.PixelismGames.WhistleStop
             }
 
             _core.RunFrame();
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            {
+                byte[] saveState = new byte[_core.StateSize];
+                System.Runtime.InteropServices.GCHandle pinnedSaveState = System.Runtime.InteropServices.GCHandle.Alloc(saveState, System.Runtime.InteropServices.GCHandleType.Pinned);
+                _core.SerializePassthrough(pinnedSaveState.AddrOfPinnedObject(), (uint)saveState.Length);
+                pinnedSaveState.Free();
+
+                byte[] ram = _core.ReadRAM();
+
+                //for (int i = 0; i < saveState.Length; i++)
+                //{
+                //    if (saveState[i] == ram[0])
+                //    {
+                //        byte[] test = new byte[ram.Length];
+                //        Array.Copy(saveState, i, test, 0, ram.Length);
+                //        if (ram.SequenceEqual(test))
+                //        {
+                //            Debug.Log("Here: " + i);
+                //            break;
+                //        }
+                //    }
+                //}
+
+                //Debug.Log(saveState[93] + " | " + ram[0]);
+                //Debug.Log(saveState[1975] + " | " + ram[1882]);
+                //Debug.Log(saveState[1971] + " | " + ram[1878]);
+
+                saveState[1975] = 5;
+                System.IO.File.WriteAllBytes("game.ss", saveState);
+            }
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Y))
+            {
+                _core.LoadState("game.ss");
+            }
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.U))
+            {
+                _core.WriteRAM(new byte[1] { 0x02 }, 0x0770);
+            }
         }
 
         // the fickle timing of this makes the exact timing of audio in emulators very tough; another solution may need to be found
@@ -117,7 +161,7 @@ namespace com.PixelismGames.WhistleStop
                 _audioSampleBuffer.RemoveRange(0, _audioSampleBuffer.Count);
             }
 
-            //Unders++;
+            _audioSmoothedCount++;
 
             // smooth the data by duping (averaging) every X samples so that we have enough samples
 
@@ -146,6 +190,8 @@ namespace com.PixelismGames.WhistleStop
                     {
                         if (bufferIndex == 0)
                             data[sampleIndex + i] = sampleBuffer[bufferIndex + i];
+                        else if (bufferIndex == sampleBuffer.Length)
+                            data[sampleIndex + i] = sampleBuffer[bufferIndex - channels + i];
                         else
                             data[sampleIndex + i] = (sampleBuffer[bufferIndex - channels + i] + sampleBuffer[bufferIndex + i]) / 2f;
                     }
@@ -175,8 +221,8 @@ namespace com.PixelismGames.WhistleStop
         {
             lock (_audioSync)
             {
-                //if (_core.FrameCount % 60 == 0)
-                //    Extras = _audioSampleBuffer.Count;
+                if (_core.FrameCount % 60 == 0)
+                    _audioRemainingSamples = _audioSampleBuffer.Count;
 
                 _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
             }

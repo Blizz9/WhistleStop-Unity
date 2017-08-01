@@ -15,12 +15,12 @@ namespace com.PixelismGames.WhistleStop
     {
         private const float PIXELS_PER_UNIT = 1f;
 
-        private const string DLL_NAME = "snes9x_libretro.dll";
-        //private const string DLL_NAME = "fceumm_libretro.dll";
+        //private const string DLL_NAME = "snes9x_libretro.dll";
+        private const string DLL_NAME = "fceumm_libretro.dll";
         //private const string DLL_NAME = "gambatte_libretro.dll";
 
-        private const string ROM_NAME = "smw.sfc";
-        //private const string ROM_NAME = "smb.nes";
+        //private const string ROM_NAME = "smw.sfc";
+        private const string ROM_NAME = "smb.nes";
         //private const string ROM_NAME = "sml.gb";
 
         public GameObject Screen; // move this out to a global singleton
@@ -30,8 +30,8 @@ namespace com.PixelismGames.WhistleStop
         private List<float> _audioSampleBuffer;
         private object _audioSync;
 
-        public int Unders = 0;
-        public int Extras = 0;
+        //public int Unders = 0;
+        //public int Extras = 0;
 
         #region MonoBehaviour
 
@@ -44,8 +44,6 @@ namespace com.PixelismGames.WhistleStop
             {
                 _audioSampleBuffer = new List<float>();
             }
-
-            gameObject.AddComponent<AudioSource>();
         }
 
         public void Start()
@@ -58,18 +56,13 @@ namespace com.PixelismGames.WhistleStop
 
             _core.Load(ROM_NAME);
 
-            Debug.Log(AudioSettings.outputSampleRate);
-
             AudioConfiguration audioConfiguration = AudioSettings.GetConfiguration();
             //audioConfiguration.sampleRate = (int)_core.AudioSampleRate;
             audioConfiguration.sampleRate = 31550; // should be _core.AudioSampleRate but this seems to match better, found by trial and error
             AudioSettings.Reset(audioConfiguration);
 
-            Debug.Log(AudioSettings.outputSampleRate);
-            Debug.Log(_core.FrameRate);
-
             // this is required for OnAudioFilterRead to work and needs to be done after setting the AudioSettings.outputSampleRate
-            gameObject.AddComponent<AudioSource>();
+            //gameObject.AddComponent<AudioSource>();
         }
 
         public void Update()
@@ -78,6 +71,12 @@ namespace com.PixelismGames.WhistleStop
 
             //GameObject.Find("Unders").GetComponent<Text>().text = "Unders: " + Unders;
             //GameObject.Find("Extras").GetComponent<Text>().text = "Extras: " + Extras;
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.T))
+                _core.SaveState("game.ss");
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Y))
+                _core.LoadState("game.ss");
 
             List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
             foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
@@ -118,7 +117,7 @@ namespace com.PixelismGames.WhistleStop
                 _audioSampleBuffer.RemoveRange(0, _audioSampleBuffer.Count);
             }
 
-            Unders++;
+            //Unders++;
 
             // smooth the data by duping (averaging) every X samples so that we have enough samples
 
@@ -176,8 +175,8 @@ namespace com.PixelismGames.WhistleStop
         {
             lock (_audioSync)
             {
-                if (_core.FrameCount % 60 == 0)
-                    Extras = _audioSampleBuffer.Count;
+                //if (_core.FrameCount % 60 == 0)
+                //    Extras = _audioSampleBuffer.Count;
 
                 _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
             }

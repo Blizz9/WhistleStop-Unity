@@ -55,6 +55,7 @@ namespace com.PixelismGames.CSLibretro
 
         private bool _variablesDirty;
 
+        private int _stateSize;
         private IntPtr _ramAddress;
         private int _ramSize;
 
@@ -197,6 +198,7 @@ namespace com.PixelismGames.CSLibretro
 
             _framePeriodNanoseconds = (long)(1000000000 / _systemAVInfo.Timing.FPS);
 
+            _stateSize = (int)_serializeSize();
             _ramAddress = _getMemoryData(MemoryType.RAM);
             _ramSize = (int)_getMemorySize(MemoryType.RAM);
         }
@@ -258,29 +260,6 @@ namespace com.PixelismGames.CSLibretro
             {
                 _frameLeftoverNanoseconds = 0;
             }
-        }
-
-        #endregion
-
-        #region Memory
-
-        public byte[] ReadRAM(int offset = 0, int? length = null)
-        {
-            if (!length.HasValue)
-                length = _ramSize - offset;
-
-            byte[] ram = new byte[length.Value];
-
-            IntPtr ramAddressOffset = (IntPtr)((long)_ramAddress + offset);
-            Marshal.Copy(ramAddressOffset, ram, 0, length.Value);
-
-            return (ram);
-        }
-
-        public void WriteRAM(byte[] data, int offset = 0)
-        {
-            IntPtr ramAddressOffset = (IntPtr)((long)_ramAddress + offset);
-            Marshal.Copy(data, 0, ramAddressOffset, data.Length);
         }
 
         #endregion
@@ -466,6 +445,53 @@ namespace com.PixelismGames.CSLibretro
 
                 VideoFrameHandler((int)width, (int)height, frameBuffer);
             }
+        }
+
+        #endregion
+
+        #region State
+
+        public void LoadState(string stateFilePath)
+        {
+            byte[] state = File.ReadAllBytes(stateFilePath);
+
+            GCHandle pinnedState = GCHandle.Alloc(state, GCHandleType.Pinned);
+            _unserialize(pinnedState.AddrOfPinnedObject(), (uint)state.Length);
+            pinnedState.Free();
+        }
+
+        public void SaveState(string stateFilePath)
+        {
+            byte[] state = new byte[_stateSize];
+
+            GCHandle pinnedState = GCHandle.Alloc(state, GCHandleType.Pinned);
+            _serialize(pinnedState.AddrOfPinnedObject(), (uint)state.Length);
+            pinnedState.Free();
+
+            File.WriteAllBytes(stateFilePath, state);
+        }
+
+        #endregion
+
+        #region Memory
+
+        public byte[] ReadRAM(int offset = 0, int? length = null)
+        {
+            if (!length.HasValue)
+                length = _ramSize - offset;
+
+            byte[] ram = new byte[length.Value];
+
+            IntPtr ramAddressOffset = (IntPtr)((long)_ramAddress + offset);
+            Marshal.Copy(ramAddressOffset, ram, 0, length.Value);
+
+            return (ram);
+        }
+
+        public void WriteRAM(byte[] data, int offset = 0)
+        {
+            IntPtr ramAddressOffset = (IntPtr)((long)_ramAddress + offset);
+            Marshal.Copy(data, 0, ramAddressOffset, data.Length);
         }
 
         #endregion

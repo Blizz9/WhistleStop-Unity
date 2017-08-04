@@ -9,7 +9,6 @@ namespace com.PixelismGames.WhistleStop.Utilities
         private static SpriteRenderer _screen;
         private static CSLibretroController _csLibretro;
         private static UIController _ui;
-        private static MemoryAnalysisController _memoryAnalysis;
 
         #region Singletons
 
@@ -69,20 +68,6 @@ namespace com.PixelismGames.WhistleStop.Utilities
             }
         }
 
-        public static MemoryAnalysisController MemoryAnalysis
-        {
-            get
-            {
-                if (_memoryAnalysis == null)
-                {
-                    Debug.Log("ERROR | Singleton: Memory Analysis not yet provided");
-                    Debug.Break();
-                }
-
-                return (_memoryAnalysis);
-            }
-        }
-
         #endregion
 
         #region Provide Routines
@@ -135,19 +120,6 @@ namespace com.PixelismGames.WhistleStop.Utilities
             else
             {
                 Debug.Log("ERROR | Singleton: UI already provided");
-                Debug.Break();
-            }
-        }
-
-        public static void ProvideMemoryAnalysis(MemoryAnalysisController memoryAnalysis)
-        {
-            if (_memoryAnalysis == null)
-            {
-                _memoryAnalysis = memoryAnalysis;
-            }
-            else
-            {
-                Debug.Log("ERROR | Singleton: Memory Analysis already provided");
                 Debug.Break();
             }
         }

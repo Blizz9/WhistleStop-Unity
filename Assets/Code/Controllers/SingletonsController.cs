@@ -15,7 +15,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
             Singleton.ProvideScreen(gameObject.Children().OfComponent<SpriteRenderer>().First());
             Singleton.ProvideCSLibretro(gameObject.Children().OfComponent<CSLibretroController>().First());
             Singleton.ProvideUI(gameObject.Children().OfComponent<UIController>().First());
-            Singleton.ProvideMemoryAnalysis(gameObject.Children().OfComponent<MemoryAnalysisController>().First());
         }
 
         #endregion

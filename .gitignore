@@ -5,3 +5,5 @@
 Library
 Temp
 .DS_Store
+Contrib
+libwinpthread-1.dll

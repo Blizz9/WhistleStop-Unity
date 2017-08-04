@@ -16,22 +16,24 @@ namespace com.PixelismGames.WhistleStop.Controllers
     {
         private const float PIXELS_PER_UNIT = 1f;
 
-        //private const string DLL_NAME = "snes9x_libretro.dll";
-        private const string DLL_NAME = "fceumm_libretro.dll";
-        //private const string DLL_NAME = "gambatte_libretro.dll";
+        //private const string DLL_NAME = @".\Contrib\Cores\snes9x_libretro.dll";
+        private const string DLL_NAME = @".\Contrib\Cores\fceumm_libretro.dll";
+        //private const string DLL_NAME = @".\Contrib\Cores\gambatte_libretro.dll";
 
-        //private const string ROM_NAME = "smw.sfc";
-        private const string ROM_NAME = "smb.nes";
-        //private const string ROM_NAME = "sml.gb";
+        //private const string ROM_NAME = @".\Contrib\ROMs\smw.sfc";
+        private const string ROM_NAME = @".\Contrib\ROMs\smb.nes";
+        //private const string ROM_NAME = @".\Contrib\ROMs\sml.gb";
 
         private Core _core;
-        private bool _isRunning;
-        private bool _isMuted;
 
         private List<float> _audioSampleBuffer;
         private object _audioSync;
 
-        // UI reporting
+        public bool IsMuted;
+        public bool IsStepping;
+        public bool IsFastForwarding;
+        public bool ShowReporting;
+
         private long _audioSmoothedCountValue;
         private UIReportingItem _audioSmoothedCount;
         private UIReportingItem _audioRemainingSamples;
@@ -68,21 +70,23 @@ namespace com.PixelismGames.WhistleStop.Controllers
             // this is required for OnAudioFilterRead to work and needs to be done after setting the AudioSettings.outputSampleRate
             gameObject.AddComponent<AudioSource>();
 
-            _isRunning = true;
-
-            _audioSmoothedCount = new UIReportingItem() { Name = "Smoothed Count" };
-            _audioRemainingSamples = new UIReportingItem() { Name = "Remaining Samples" };
-            Singleton.UI.AddReportingItem(_audioSmoothedCount);
-            Singleton.UI.AddReportingItem(_audioRemainingSamples);
+            if (ShowReporting)
+            {
+                _audioSmoothedCount = new UIReportingItem() { Name = "Smoothed Count" };
+                _audioRemainingSamples = new UIReportingItem() { Name = "Remaining Samples" };
+                Singleton.UI.AddReportingItem(_audioSmoothedCount);
+                Singleton.UI.AddReportingItem(_audioRemainingSamples);
+            }
         }
 
         public void Update()
         {
-            if (_isRunning || UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            if (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space))
             {
                 StartCoroutine(clockFrame());
 
-                Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
+                if (ShowReporting)
+                    Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
 
                 if (BeforeRunFrame != null)
                     BeforeRunFrame();
@@ -103,8 +107,14 @@ namespace com.PixelismGames.WhistleStop.Controllers
                     AfterRunFrame();
             }
 
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Backspace))
-                _isRunning = !_isRunning;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.F1))
+                IsStepping = !IsStepping;
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.F2))
+                IsFastForwarding = true;
+
+            if (UnityEngine.Input.GetKeyUp(KeyCode.F2))
+                IsFastForwarding = false;
         }
 
         // the fickle timing of this makes the exact timing of audio in emulators very tough; another solution may need to be found
@@ -186,9 +196,12 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             yield return new WaitForEndOfFrame();
 
-            _core.StopFrameTiming();
-            _core.SleepRemainingFrameTime();
-            _core.StartFrameTiming();
+            if (!IsFastForwarding)
+            {
+                _core.StopFrameTiming();
+                _core.SleepRemainingFrameTime();
+                _core.StartFrameTiming();
+            }
         }
 
         #endregion
@@ -197,12 +210,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         private void audioSampleBatchHandler(short[] samples)
         {
-            if (!_isMuted)
+            if (!IsMuted && !IsStepping && !IsFastForwarding)
             {
                 lock (_audioSync)
                 {
-                    if (_core.FrameCount % 60 == 0)
-                        Singleton.UI.SetReportingItemValue(_audioRemainingSamples, _audioSampleBuffer.Count);
+                    if (ShowReporting)
+                        if (_core.FrameCount % 60 == 0)
+                            Singleton.UI.SetReportingItemValue(_audioRemainingSamples, _audioSampleBuffer.Count);
 
                     _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
                 }

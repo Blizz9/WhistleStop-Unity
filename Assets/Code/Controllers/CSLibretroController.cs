@@ -25,6 +25,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
         //private const string ROM_NAME = "sml.gb";
 
         private Core _core;
+        private bool _isRunning;
+        private bool _isMuted;
 
         private List<float> _audioSampleBuffer;
         private object _audioSync;
@@ -66,6 +68,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
             // this is required for OnAudioFilterRead to work and needs to be done after setting the AudioSettings.outputSampleRate
             gameObject.AddComponent<AudioSource>();
 
+            _isRunning = true;
+
             _audioSmoothedCount = new UIReportingItem() { Name = "Smoothed Count" };
             _audioRemainingSamples = new UIReportingItem() { Name = "Remaining Samples" };
             Singleton.UI.AddReportingItem(_audioSmoothedCount);
@@ -74,27 +78,33 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         public void Update()
         {
-            StartCoroutine(clockFrame());
-
-            Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
-
-            if (BeforeRunFrame != null)
-                BeforeRunFrame();
-
-            List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
-            foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
+            if (_isRunning || UnityEngine.Input.GetKeyDown(KeyCode.Space))
             {
-                if (UnityEngine.Input.GetButtonDown(input.JoypadInputID.ToString()))
-                    input.Value = 1;
+                StartCoroutine(clockFrame());
 
-                if (UnityEngine.Input.GetButtonUp(input.JoypadInputID.ToString()))
-                    input.Value = 0;
+                Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
+
+                if (BeforeRunFrame != null)
+                    BeforeRunFrame();
+
+                List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
+                foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
+                {
+                    if (UnityEngine.Input.GetButtonDown(input.JoypadInputID.ToString()))
+                        input.Value = 1;
+
+                    if (UnityEngine.Input.GetButtonUp(input.JoypadInputID.ToString()))
+                        input.Value = 0;
+                }
+
+                _core.RunFrame();
+
+                if (AfterRunFrame != null)
+                    AfterRunFrame();
             }
 
-            _core.RunFrame();
-
-            if (AfterRunFrame != null)
-                AfterRunFrame();
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Backspace))
+                _isRunning = !_isRunning;
         }
 
         // the fickle timing of this makes the exact timing of audio in emulators very tough; another solution may need to be found
@@ -187,12 +197,15 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         private void audioSampleBatchHandler(short[] samples)
         {
-            lock (_audioSync)
+            if (!_isMuted)
             {
-                if (_core.FrameCount % 60 == 0)
-                    Singleton.UI.SetReportingItemValue(_audioRemainingSamples, _audioSampleBuffer.Count);
+                lock (_audioSync)
+                {
+                    if (_core.FrameCount % 60 == 0)
+                        Singleton.UI.SetReportingItemValue(_audioRemainingSamples, _audioSampleBuffer.Count);
 
-                _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
+                    _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
+                }
             }
         }
 
@@ -235,9 +248,14 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         #region Accessible Routines
 
-        public byte[] GetRAM()
+        public byte[] ReadRAM()
         {
             return (_core.ReadRAM());
+        }
+
+        public void WriteRAM(byte[] data, int offset = 0)
+        {
+            _core.WriteRAM(data, offset);
         }
 
         public void LoadState(string saveStateFilePath)

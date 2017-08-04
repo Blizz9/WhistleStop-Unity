@@ -395,7 +395,7 @@ namespace com.PixelismGames.CSLibretro
             return (returnValue);
         }
 
-        private void logCallback(LogLevel level, string fmt, params IntPtr[] arguments)
+        private void logCallback(LogLevel level, string fmt, IntPtr arg0, IntPtr arg1, IntPtr arg2, IntPtr arg3, IntPtr arg4, IntPtr arg5, IntPtr arg6, IntPtr arg7, IntPtr arg8, IntPtr arg9)
         {
             if (LogHandler != null)
             {
@@ -403,7 +403,7 @@ namespace com.PixelismGames.CSLibretro
 
                 do
                 {
-                    int length = Win32API._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arguments);
+                    int length = Win32API._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
                     if ((length <= 0) || (length >= logMessage.Capacity))
                     {

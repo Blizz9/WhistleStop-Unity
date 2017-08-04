@@ -9,11 +9,10 @@ namespace com.PixelismGames.WhistleStop.Controllers
     [AddComponentMenu("Pixelism Games/Controllers/UI Controller")]
     public class UIController : MonoBehaviour
     {
+        private const int REPORTING_ITEM_Y_STRIDE = 26;
+
         private List<UIReportingItem> _reportingItems;
-
-        private Text _textFieldTemplate;
-
-        private Vector3 _textFieldPosition;
+        private Text _reportingTextFieldTemplate;
 
         #region MonoBehaviour
 
@@ -21,8 +20,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             _reportingItems = new List<UIReportingItem>();
 
-            _textFieldTemplate = gameObject.Descendants().OfComponent<Text>().First();
-            _textFieldPosition = _textFieldTemplate.rectTransform.position;
+            _reportingTextFieldTemplate = gameObject.Descendants().Where(d => d.name == "ReportingTextFieldTemplate").First().GetComponent<Text>();
         }
 
         #endregion
@@ -34,23 +32,14 @@ namespace com.PixelismGames.WhistleStop.Controllers
             if (!_reportingItems.Contains(reportingItem))
                 _reportingItems.Add(reportingItem);
 
-            reportingItem.TextField = Instantiate(_textFieldTemplate, _textFieldTemplate.transform.parent);
+            reportingItem.TextField = Instantiate(_reportingTextFieldTemplate, _reportingTextFieldTemplate.transform.parent);
             reportingItem.TextField.gameObject.SetActive(true);
-            reportingItem.TextField.rectTransform.position = _textFieldPosition;
-            _textFieldPosition = new Vector3(_textFieldPosition.x, _textFieldPosition.y - 38, _textFieldPosition.z);
         }
 
         public void RemoveReportingItem(UIReportingItem reportingItem)
         {
             _reportingItems.Remove(reportingItem);
-
-            foreach (Text textField in gameObject.Descendants().OfComponent<Text>().Where(t => t.isActiveAndEnabled))
-                GameObject.Destroy(textField.gameObject);
-
-            _textFieldPosition = _textFieldTemplate.rectTransform.position;
-
-            foreach (UIReportingItem currentReportingItem in _reportingItems)
-                AddReportingItem(currentReportingItem);
+            GameObject.Destroy(reportingItem.TextField.gameObject);
         }
 
         public void IncrementReportingItem(UIReportingItem reportingItem)

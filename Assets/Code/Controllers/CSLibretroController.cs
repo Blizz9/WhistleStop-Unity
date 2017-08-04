@@ -10,7 +10,6 @@ using UnityEngine;
 namespace com.PixelismGames.WhistleStop.Controllers
 {
     // TODO : Implement readonly for properties in editor
-    // TODO : Figure out why a build is crashing with NES
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {

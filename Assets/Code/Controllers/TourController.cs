@@ -5,7 +5,7 @@ using UnityEngine;
 namespace com.PixelismGames.WhistleStop.Controllers
 {
     [AddComponentMenu("")]
-    public class TourController : MonoBehaviour
+    public abstract class TourController : MonoBehaviour
     {
         protected List<TourReportingItem> _reportingItems;
         protected byte[] _ram;
@@ -14,7 +14,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         #region MonoBehaviour
 
-        public void Awake()
+        public virtual void Awake()
         {
             _reportingItems = new List<TourReportingItem>();
         }
@@ -38,7 +38,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _ram = Singleton.CSLibretro.ReadRAM();
 
             foreach (TourReportingItem reportingItem in _reportingItems)
-                reportingItem.TextField.text = string.Format("{0:X4} {1}: {2}", reportingItem.Address, reportingItem.Name, _ram[reportingItem.Address]);
+                reportingItem.Text.text = string.Format("{0:X4} {1}: {2}", reportingItem.Address, reportingItem.Name, _ram[reportingItem.Address]);
         }
 
         #endregion
@@ -54,6 +54,12 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
             _reportingItems.Add(reportingItem);
         }
+
+        #endregion
+
+        #region Events
+
+        public abstract void TourStopSelected(TourStopController tourStop);
 
         #endregion
     }

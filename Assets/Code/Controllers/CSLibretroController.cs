@@ -10,6 +10,7 @@ using UnityEngine;
 namespace com.PixelismGames.WhistleStop.Controllers
 {
     // TODO : Implement readonly for properties in editor
+    // TODO : Test other ways of timing video and audio | thread video | vsync and let update call runframe | find EXACT timing of OnAudioFilterRead
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
@@ -39,6 +40,15 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         public event Action BeforeRunFrame;
         public event Action AfterRunFrame;
+
+        #region Properties
+
+        public long FrameCount
+        {
+            get { return (_core.FrameCount); }
+        }
+
+        #endregion
 
         #region MonoBehaviour
 

@@ -1,4 +1,6 @@
-﻿using com.PixelismGames.WhistleStop.Utilities;
+﻿using System.Collections.Generic;
+using System.Linq;
+using com.PixelismGames.WhistleStop.Utilities;
 using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
@@ -16,6 +18,9 @@ namespace com.PixelismGames.WhistleStop.Controllers
         private const short LEVEL_LOADING_2 = 0x0772; // 0 = restart, 1 = starting, 3 = in-level
         private const short LEVEL_LOADING_TIMER = 0x07A0;
 
+        private List<TourStopController> _tourStops;
+        private string _saveStateToLoad;
+
         private bool _preRoundStarted;
         private bool _roundStarted;
         private bool _deathOccurred;
@@ -25,9 +30,89 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         #region MonoBehaviour
 
+        public override void Awake()
+        {
+            base.Awake();
+
+            _tourStops = new List<TourStopController>();
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-1.ss";
+            _tourStops.Last().Description = "World 1-1";
+            _tourStops.Last().Selected = true;
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-1 (checkpoint).ss";
+            _tourStops.Last().Description = "World 1-1 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-2.ss";
+            _tourStops.Last().Description = "World 1-2";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-2 (checkpoint).ss";
+            _tourStops.Last().Description = "World 1-2 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-3.ss";
+            _tourStops.Last().Description = "World 1-3";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-3 (checkpoint).ss";
+            _tourStops.Last().Description = "World 1-3 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 1-4.ss";
+            _tourStops.Last().Description = "World 1-4";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-1.ss";
+            _tourStops.Last().Description = "World 2-1";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-1 (checkpoint).ss";
+            _tourStops.Last().Description = "World 2-1 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-2.ss";
+            _tourStops.Last().Description = "World 2-2";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-2 (checkpoint).ss";
+            _tourStops.Last().Description = "World 2-2 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-3.ss";
+            _tourStops.Last().Description = "World 2-3";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-3 (checkpoint).ss";
+            _tourStops.Last().Description = "World 2-3 (checkpoint)";
+
+            _tourStops.Add(Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>());
+            _tourStops.Last().Tour = this;
+            _tourStops.Last().FilePath = @".\Contrib\SMBTour\SMB 2-4.ss";
+            _tourStops.Last().Description = "World 2-4";
+        }
+
         public override void Start()
         {
             base.Start();
+
+            #region Reporting Items
 
             if (ShowReporting)
             {
@@ -57,6 +142,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 addReportingItem(0x0773, "Level Palette");
                 addReportingItem(LEVEL_LOADING_TIMER, "Level Loading Timer");
             }
+
+            #endregion
         }
 
         #endregion
@@ -67,16 +154,23 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             base.beforeRunFrame();
 
-            if (Input.GetKeyDown(KeyCode.Y))
+            if (Singleton.CSLibretro.FrameCount == 0)
             {
-                Singleton.CSLibretro.LoadState("game.ss");
-                Debug.Log("Loaded save state game.ss");
+                Singleton.CSLibretro.LoadState(_tourStops.First().FilePath);
             }
+            else if (!string.IsNullOrEmpty(_saveStateToLoad))
+            {
+                Singleton.CSLibretro.LoadState(_saveStateToLoad);
+                _saveStateToLoad = string.Empty;
+            }
+
         }
 
         protected override void afterRunFrame()
         {
             base.afterRunFrame();
+
+            #region Save State Creation
 
             if (CreatingSaveStates)
             {
@@ -132,6 +226,20 @@ namespace com.PixelismGames.WhistleStop.Controllers
                     Debug.Log("Reset death watch");
                 }
             }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Events
+
+        public override void TourStopSelected(TourStopController tourStop)
+        {
+            foreach (TourStopController otherTourStop in _tourStops)
+                otherTourStop.Selected = otherTourStop == tourStop;
+
+            _saveStateToLoad = tourStop.FilePath;
         }
 
         #endregion

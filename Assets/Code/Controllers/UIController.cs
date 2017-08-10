@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
+    // TODO : Redesign reporting items to be selfsufficient like tour stops
     [AddComponentMenu("Pixelism Games/Controllers/UI Controller")]
     public class UIController : MonoBehaviour
     {
@@ -17,6 +18,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
         public GameObject TourStopPrefab;
         [HideInInspector] public GameObject TourStopParent;
 
+        private Text _status;
+
         #region MonoBehaviour
 
         public void Awake()
@@ -26,11 +29,20 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _reportingTextTemplate = gameObject.Descendants().Where(d => d.name == "ReportingTextTemplate").First().GetComponent<Text>();
 
             TourStopParent = gameObject.Descendants().Where(d => d.name == "TourStopContent").First();
+
+            _status = gameObject.Descendants().Where(d => d.name == "Status").First().GetComponent<Text>();
+            _status.color = new Color(_status.color.r, _status.color.g, _status.color.b, 0f);
+        }
+
+        public void Update()
+        {
+            if (_status.color.a > 0f)
+                _status.color = new Color(_status.color.r, _status.color.g, _status.color.b, Mathf.Clamp01(_status.color.a - (Time.deltaTime * 0.35f)));
         }
 
         #endregion
 
-        #region Reporting Items
+            #region Reporting Items
 
         public void AddReportingItem(UIReportingItem reportingItem)
         {
@@ -57,6 +69,16 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             reportingItem.Value = value;
             reportingItem.Text.text = string.Format("{0}: {1}", reportingItem.Name, reportingItem.Value);
+        }
+
+        #endregion
+
+        #region Status
+
+        public void SetStatus(string statusMessage)
+        {
+            _status.text = statusMessage;
+            _status.color = new Color(_status.color.r, _status.color.g, _status.color.b, 1f);
         }
 
         #endregion

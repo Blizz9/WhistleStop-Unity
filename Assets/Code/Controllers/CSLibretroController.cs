@@ -10,7 +10,7 @@ using UnityEngine;
 namespace com.PixelismGames.WhistleStop.Controllers
 {
     // TODO : Implement readonly for properties in editor
-    // TODO : Test other ways of timing video and audio | thread video | vsync and let update call runframe | find EXACT timing of OnAudioFilterRead
+    // TODO : find EXACT timing of OnAudioFilterRead
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
@@ -92,7 +92,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             if (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space))
             {
-                StartCoroutine(clockFrame());
+                //StartCoroutine(clockFrame());
 
                 if (ShowReporting)
                     Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);

@@ -5,10 +5,13 @@ using UnityEngine;
 namespace com.PixelismGames.WhistleStop.Controllers
 {
     [AddComponentMenu("")]
-    public abstract class TourController : MonoBehaviour
+    public class TourController : MonoBehaviour
     {
         protected List<TourReportingItem> _reportingItems;
         protected byte[] _ram;
+        protected byte[] _lastFrameRAM;
+
+        protected List<TourStopController> _tourStops;
 
         public bool ShowReporting;
 
@@ -35,6 +38,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         protected virtual void afterRunFrame()
         {
+            _lastFrameRAM = _ram == null ? Singleton.CSLibretro.ReadRAM() : _ram;
             _ram = Singleton.CSLibretro.ReadRAM();
 
             foreach (TourReportingItem reportingItem in _reportingItems)
@@ -59,7 +63,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         #region Events
 
-        public abstract void TourStopSelected(TourStopController tourStop);
+        public virtual void TourStopSelected(TourStopController tourStop)
+        {
+            foreach (TourStopController otherTourStop in _tourStops)
+                otherTourStop.Selected = otherTourStop == tourStop;
+
+            Singleton.CSLibretro.LoadState(tourStop.FilePath);
+        }
 
         #endregion
     }

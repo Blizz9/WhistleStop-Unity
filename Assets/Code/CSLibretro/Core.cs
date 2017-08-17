@@ -43,6 +43,8 @@ namespace com.PixelismGames.CSLibretro
         private InputStateHandler _inputStateHandler;
         private VideoRefreshHandler _videoRefreshHandler;
 
+		private OS _os;
+
         private string _libretroDLLPath;
         private IntPtr _libretroDLL;
 
@@ -117,8 +119,10 @@ namespace com.PixelismGames.CSLibretro
 
         #endregion
 
-        public Core(string libretroDLLPath)
+		public Core(OS os, string libretroDLLPath)
         {
+			_os = os;
+
             _frameTimer = new Stopwatch();
 
             _variablesDirty = true;
@@ -127,7 +131,10 @@ namespace com.PixelismGames.CSLibretro
             Inputs = new List<Input>();
 
             _libretroDLLPath = libretroDLLPath;
-            _libretroDLL = Win32API.LoadLibrary(libretroDLLPath);
+			if (_os == OS.OSX)
+				_libretroDLL = OSXAPI.dlopen(libretroDLLPath, 2);
+			else
+            	_libretroDLL = WindowsAPI.LoadLibrary(libretroDLLPath);
 
             _apiVersion = GetDelegate<APIVersionSignature>("retro_api_version");
             _deinit = GetDelegate<DeinitSignature>("retro_deinit");
@@ -403,7 +410,11 @@ namespace com.PixelismGames.CSLibretro
 
                 do
                 {
-                    int length = Win32API._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+					int length;
+					if (_os == OS.OSX)
+                    	length = OSXAPI.snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+					else
+						length = WindowsAPI._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
                     if ((length <= 0) || (length >= logMessage.Capacity))
                     {
@@ -510,7 +521,11 @@ namespace com.PixelismGames.CSLibretro
 
         public T GetDelegate<T>(string libretroFunctionName)
         {
-            return ((T)Convert.ChangeType(Marshal.GetDelegateForFunctionPointer(Win32API.GetProcAddress(_libretroDLL, libretroFunctionName), typeof(T)), typeof(T)));
+			if (_os == OS.OSX)
+				return ((T)Convert.ChangeType(Marshal.GetDelegateForFunctionPointer(OSXAPI.dlsym(_libretroDLL, libretroFunctionName), typeof(T)), typeof(T)));
+			else
+            	return ((T)Convert.ChangeType(Marshal.GetDelegateForFunctionPointer(WindowsAPI.GetProcAddress(_libretroDLL, libretroFunctionName), typeof(T)), typeof(T)));
+
         }
 
         #endregion

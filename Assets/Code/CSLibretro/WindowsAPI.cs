@@ -4,7 +4,7 @@ using System.Text;
 
 namespace com.PixelismGames.CSLibretro
 {
-    public class Win32API
+    public class WindowsAPI
     {
         [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern IntPtr LoadLibrary(string dllPath);

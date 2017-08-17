@@ -17,11 +17,11 @@ namespace com.PixelismGames.WhistleStop.Controllers
         private const float PIXELS_PER_UNIT = 1f;
 
         //private const string DLL_NAME = @".\Contrib\Cores\snes9x_libretro.dll";
-        private const string DLL_NAME = @".\Contrib\Cores\fceumm_libretro.dll";
+        private const string DLL_NAME = @"./Contrib/Cores/fceumm_libretro.dylib";
         //private const string DLL_NAME = @".\Contrib\Cores\gambatte_libretro.dll";
 
         //private const string ROM_NAME = @".\Contrib\ROMs\smw.sfc";
-        private const string ROM_NAME = @".\Contrib\ROMs\smb.nes";
+        private const string ROM_NAME = @"./Contrib/ROMs/smb.nes";
         //private const string ROM_NAME = @".\Contrib\ROMs\sml.gb";
 
         private Core _core;
@@ -63,7 +63,11 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         public void Start()
         {
-            _core = new Core(DLL_NAME);
+			#if UNITY_STANDALONE_OSX
+            _core = new Core(OS.OSX, DLL_NAME);
+			#elif
+			_core = new Core(com.PixelismGames.CSLibretro.OperatingSystem.Windows, DLL_NAME);
+			#endif
 
             _core.AudioSampleBatchHandler += audioSampleBatchHandler;
             _core.LogHandler += logHandler;

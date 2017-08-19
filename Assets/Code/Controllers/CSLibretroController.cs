@@ -112,14 +112,35 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         public void Update()
         {
-            List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
+            List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y, JoypadInputID.L, JoypadInputID.R };
             foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
             {
-                if (UnityEngine.Input.GetButtonDown(input.JoypadInputID.ToString()))
-                    input.Value = 1;
+                switch (input.JoypadInputID)
+                {
+                    case JoypadInputID.Up:
+                        input.Value = Convert.ToInt16(UnityEngine.Input.GetAxis("DPad Vertical Axis") > 0f);
+                        break;
 
-                if (UnityEngine.Input.GetButtonUp(input.JoypadInputID.ToString()))
-                    input.Value = 0;
+                    case JoypadInputID.Down:
+                        input.Value = Convert.ToInt16(UnityEngine.Input.GetAxis("DPad Vertical Axis") < 0f);
+                        break;
+
+                    case JoypadInputID.Left:
+                        input.Value = Convert.ToInt16(UnityEngine.Input.GetAxis("DPad Horizontal Axis") < 0f);
+                        break;
+
+                    case JoypadInputID.Right:
+                        input.Value = Convert.ToInt16(UnityEngine.Input.GetAxis("DPad Horizontal Axis") > 0f);
+                        break;
+
+                    default:
+                        string buttonName = input.JoypadInputID.ToString() + " Button";
+                        if (UnityEngine.Input.GetButtonDown(buttonName))
+                            input.Value = 1;
+                        if (UnityEngine.Input.GetButtonUp(buttonName))
+                            input.Value = 0;
+                        break;
+                }
             }
 
             if (_core.HasFramePeriodElapsed() && (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space)))

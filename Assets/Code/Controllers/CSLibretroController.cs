@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using com.PixelismGames.CSLibretro;
 using com.PixelismGames.CSLibretro.Libretro;
 using com.PixelismGames.WhistleStop.Utilities;
@@ -8,12 +10,10 @@ using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
-    // TODO : Implement readonly for properties in editor
-    // TODO : find EXACT timing of OnAudioFilterRead
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
-        private const float PIXELS_PER_UNIT = 1f;
+        public const float PIXELS_PER_UNIT = 1f;
 
         #if UNITY_STANDALONE_OSX
         //private const string DLL_NAME = @"./Contrib/Cores/snes9x_libretro.dylib";
@@ -53,6 +53,16 @@ namespace com.PixelismGames.WhistleStop.Controllers
         public long FrameCount
         {
             get { return (_core.FrameCount); }
+        }
+
+        public int ScreenHeight
+        {
+            get { return (_core.ScreenHeight); }
+        }
+
+        public int ScreenWidth
+        {
+            get { return (_core.ScreenWidth); }
         }
 
         #endregion
@@ -165,6 +175,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _audioSmoothedCountValue++;
 
             // smooth the data by duping (averaging) every X samples so that we have enough samples
+            // this ultimately needs to be done via time stretching
 
             int frameCount = data.Length / channels;
             int bufferFrameCount = sampleBuffer.Length / channels;
@@ -280,9 +291,32 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _core.LoadState(saveStateFilePath);
         }
 
+        public void LoadState(byte[] state)
+        {
+            GCHandle pinnedState = GCHandle.Alloc(state, GCHandleType.Pinned);
+            _core.UnserializePassthrough(pinnedState.AddrOfPinnedObject(), (uint)state.Length);
+            pinnedState.Free();
+        }
+
         public void SaveState(string saveStateFilePath)
         {
             _core.SaveState(saveStateFilePath);
+        }
+
+        public void SaveScreenshot(string screenshotFilePath)
+        {
+            int width = Singleton.Screen.sprite.texture.width;
+            int height = Singleton.Screen.sprite.texture.height;
+
+            Texture2D rightedScreen = new Texture2D(width, height);
+
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    rightedScreen.SetPixel(x, (height - y - 1), Singleton.Screen.sprite.texture.GetPixel(x, y));
+
+            rightedScreen.Apply();
+
+            File.WriteAllBytes(screenshotFilePath, rightedScreen.EncodeToPNG());
         }
 
         #endregion

@@ -1,22 +1,15 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using com.PixelismGames.WhistleStop.Utilities;
 using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
-    // TODO : Do a lot of the tour stop figuring without going in a state line, calculate each frame
+    // TODO : Get rid of SMB prefix on savestates
     [AddComponentMenu("Pixelism Games/Controllers/Tours/SMB Tour Controller")]
     public class SMBTourController : TourController
     {
-        private enum State
-        {
-            Startup = 0,
-            TitleScreen,
-            LoadingLevel,
-            InLevel
-        }
-
         private class TourStopManifest
         {
             public int World;
@@ -36,29 +29,37 @@ namespace com.PixelismGames.WhistleStop.Controllers
             }
         }
 
+        private const byte RAM_OFFSET = 0x5D;
         private const short MOVING_DIRECTION = 0x0045;
         private const short CURRENT_SCREEN = 0x071A;
         private const short INPUTS = 0x074A;
         private const short PLAYER_STATE = 0x0754; // 0 = big, 1 = small
         private const short POWERUP_STATE = 0x0756; // 0 = small, 1 = big, >=2 = fiery
         private const short LIVES = 0x075A;
+        private const short COINS = 0x075E;
         private const short WORLD = 0x075F;
         private const short LEVEL = 0x0760;
-        private const short LEVEL_LOADING_1 = 0x0770; // 1 = start
+        private const short GAME_LOADING_STATE = 0x0770; // 0 = not started, 1 = started
         private const short LEVEL_LOADING_STATE = 0x0772; // 0 = restart, 1 = starting, 3 = in-level
         private const short PLAYER_COUNT = 0x077A;
         private const short LEVEL_LOADING_TIMER = 0x07A0;
+        private const short SCORE_MILLIONS = 0x07DD;
+        private const short SCORE_HUNDRED_THOUSANDS = 0x07DE;
+        private const short SCORE_TEN_THOUSANDS = 0x07DF;
+        private const short SCORE_THOUSANDS = 0x07E0;
+        private const short SCORE_HUNDREDS = 0x07E1;
+        private const short SCORE_TENS = 0x07E2;
+        private const short COINS_DISPLAY_TENS = 0x07ED;
+        private const short COINS_DISPLAY_ONES = 0x07EE;
 
         private List<TourStopManifest> _tourStopManifests;
-
-        private State _state;
         private int _tourStopIndex;
 
         #region MonoBehaviour
 
-        public override void Awake()
+        public override void Start()
         {
-            base.Awake();
+            base.Start();
 
             _tourStopManifests = new List<TourStopManifest>();
             _tourStopManifests.Add(new TourStopManifest(0, 1, 0, 1, 5));
@@ -68,6 +69,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _tourStopManifests.Add(new TourStopManifest(0, 1, 3, 3, 4));
             _tourStopManifests.Add(new TourStopManifest(0, 1, 3, 3, 0));
             _tourStopManifests.Add(new TourStopManifest(0, 1, 4, 4, 0));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 0, 1, 6));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 0, 1, 0));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 2, 2, 5));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 2, 2, 0));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 3, 3, 7));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 3, 3, 0));
+            _tourStopManifests.Add(new TourStopManifest(1, 2, 4, 4, 0));
 
             _tourStops = new List<TourStopController>();
             foreach (TourStopManifest tourStopManifest in _tourStopManifests)
@@ -77,11 +85,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 if ((tourStopManifest.LevelDisplay == 4) || (tourStopManifest.CheckpointScreen != 0))
                 {
                     tourStop.FilePath = string.Format(@".\Contrib\SMBTour\SMB {0}-{1}.ss", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
+                    tourStop.LoadScreenshot(string.Format(@".\Contrib\SMBTour\SMB {0}-{1}.png", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay));
                     tourStop.Description = string.Format("World {0}-{1}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
                 }
                 else
                 {
                     tourStop.FilePath = string.Format(@".\Contrib\SMBTour\SMB {0}-{1} (checkpoint).ss", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
+                    tourStop.LoadScreenshot(string.Format(@".\Contrib\SMBTour\SMB {0}-{1} (checkpoint).png", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay));
                     tourStop.Description = string.Format("World {0}-{1} (checkpoint)", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
                 }
                 _tourStops.Add(tourStop);
@@ -90,11 +100,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
             }
 
             _tourStops[_tourStopIndex].Selected = true;
-        }
-
-        public override void Start()
-        {
-            base.Start();
 
             #region Reporting Items
 
@@ -120,7 +125,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 addReportingItem(0x0757, "Pre-level Flag");
                 addReportingItem(LIVES, "Lives");
                 addReportingItem(LEVEL, "Level");
-                addReportingItem(LEVEL_LOADING_1, "Level Loading 1");
+                addReportingItem(GAME_LOADING_STATE, "Level Loading 1");
                 addReportingItem(LEVEL_LOADING_STATE, "Level Loading State");
                 addReportingItem(0x0773, "Level Palette");
                 addReportingItem(PLAYER_COUNT, "Player Count");
@@ -130,10 +135,42 @@ namespace com.PixelismGames.WhistleStop.Controllers
             #endregion
         }
 
+        public void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+                Singleton.CSLibretro.SaveState(@".\Contrib\Saves\temp.ss");
+
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+                Singleton.CSLibretro.LoadState(@".\Contrib\Saves\temp.ss");
+
+            //if (Input.GetKeyDown(KeyCode.Alpha3) && !string.IsNullOrEmpty(_statePrefix))
+            //{
+            //    string screenshotFilename = string.Format(@".\Contrib\Saves\{0}.png", _statePrefix);
+            //    Singleton.CSLibretro.SaveScreenshot(screenshotFilename);
+
+            //    Debug.Log("Screenshot taken: " + screenshotFilename);
+            //}
+
+            if (Input.GetKeyDown(KeyCode.Alpha4))
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 1-4.ss");
+
+            if (Input.GetKeyDown(KeyCode.Alpha5))
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-1.ss");
+
+            if (Input.GetKeyDown(KeyCode.Alpha6))
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-2.ss");
+
+            if (Input.GetKeyDown(KeyCode.Alpha7))
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-3.ss");
+
+            if (Input.GetKeyDown(KeyCode.Alpha8))
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-4.ss");
+        }
+
         #endregion
 
         #region Callbacks
-
+        
         protected override void afterRunFrame()
         {
             base.afterRunFrame();
@@ -141,27 +178,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
             if ((_lastFrameRAM[PLAYER_COUNT] == 0) && (_ram[PLAYER_COUNT] == 1))
                 Singleton.UI.SetStatus("Sorry, this tour does not support 2 players");
 
-            if ((_state == State.Startup) && (_ram[LEVEL_LOADING_STATE] == 3))
+            if ((_lastFrameRAM[GAME_LOADING_STATE] == 0) && (_ram[GAME_LOADING_STATE] == 1))
             {
-                _state = State.TitleScreen;
-                Debug.Log("State: Title Screen");
+                Debug.Log("Game Started, Loading Tour Stop: Start");
+                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB Start.ss");
             }
 
-            if ((_state == State.TitleScreen) && ((_ram[INPUTS] & 0x10) == 0x10))
-            {
-                Debug.Log("Game Started, Loading Tour Stop: " + _tourStops[_tourStopIndex].Description);
-
-                _state = State.LoadingLevel;
-                Singleton.CSLibretro.LoadState(_tourStops[_tourStopIndex].FilePath);
-            }
-
-            if ((_state == State.LoadingLevel) && (_ram[LEVEL_LOADING_STATE] == 3))
-            {
-                _state = State.InLevel;
-                Debug.Log("State: In Level");
-            }
-
-            if ((_state == State.InLevel) && ((_lastFrameRAM[CURRENT_SCREEN] + 1) == _ram[CURRENT_SCREEN]) && (_ram[CURRENT_SCREEN] == _tourStopManifests[_tourStopIndex].CheckpointScreen))
+            if ((_ram[LEVEL_LOADING_STATE] == 3) && ((_lastFrameRAM[CURRENT_SCREEN] + 1) == _ram[CURRENT_SCREEN]) && (_ram[CURRENT_SCREEN] == _tourStopManifests[_tourStopIndex].CheckpointScreen))
             {
                 _tourStopIndex++;
 
@@ -172,28 +195,19 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 Debug.Log("Reached Checkpoint: Tour Stop Changed to " + _tourStops[_tourStopIndex].Description);
             }
 
-            if ((_state == State.InLevel) && ((_lastFrameRAM[LIVES] - 1) == _ram[LIVES]))
+            if ((_ram[LEVEL_LOADING_STATE] == 0) && ((_lastFrameRAM[LIVES] - 1) == _ram[LIVES]))
             {
                 Debug.Log("Player Died, Loading State: " + _tourStops[_tourStopIndex].Description);
-
-                _state = State.LoadingLevel;
-                Singleton.CSLibretro.LoadState(_tourStops[_tourStopIndex].FilePath);
+                loadTourStopWithInjection(_tourStops[_tourStopIndex]);
             }
 
-            if ((_state == State.InLevel) && (_ram[LEVEL_LOADING_STATE] == 1))
+            if (_ram[LEVEL_LOADING_STATE] == 1)
             {
-                _state = State.LoadingLevel;
-                Debug.Log("State: Loading Level");
-
                 if ((_ram[WORLD] != _tourStopManifests[_tourStopIndex].World) || (_ram[LEVEL] != _tourStopManifests[_tourStopIndex].Level))
                 {
                     TourStopManifest tourStopManifest = _tourStopManifests.Where(tsm => ((tsm.World == _ram[WORLD]) && (tsm.Level == _ram[LEVEL]))).FirstOrDefault();
 
-                    if (tourStopManifest == null)
-                    {
-                        Debug.Log("Level Changed: No Tour Stop Found");
-                    }
-                    else
+                    if (tourStopManifest != null)
                     {
                         _tourStopIndex = _tourStopManifests.IndexOf(tourStopManifest);
 
@@ -205,79 +219,107 @@ namespace com.PixelismGames.WhistleStop.Controllers
                     }
                 }
             }
+        }
+        
+        #endregion
 
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                Singleton.CSLibretro.SaveState(@".\Contrib\Saves\temp.ss");
+        #region Events
 
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-                Singleton.CSLibretro.LoadState(@".\Contrib\Saves\temp.ss");
+        public override void TourStopSelected(TourStopController tourStop)
+        {
+            base.TourStopSelected(tourStop);
+
+            _tourStopIndex = _tourStops.IndexOf(tourStop);
+
+            loadTourStopWithInjection(tourStop);
+        }
+
+        #endregion
+
+        #region Loading
+
+        private void loadTourStopWithInjection(TourStopController tourStop)
+        {
+            byte[] state = File.ReadAllBytes(tourStop.FilePath);
+
+            if (_ram[LIVES] > 4)
+                state[LIVES + RAM_OFFSET] = _ram[LIVES];
+
+            if (_ram[COINS] > 90)
+            {
+                state[COINS + RAM_OFFSET] = _ram[COINS];
+                state[COINS_DISPLAY_TENS + RAM_OFFSET] = _ram[COINS_DISPLAY_TENS];
+                state[COINS_DISPLAY_ONES + RAM_OFFSET] = _ram[COINS_DISPLAY_ONES];
+            }
+
+            state[SCORE_MILLIONS + RAM_OFFSET] = _ram[SCORE_MILLIONS];
+            state[SCORE_HUNDRED_THOUSANDS + RAM_OFFSET] = _ram[SCORE_HUNDRED_THOUSANDS];
+            state[SCORE_TEN_THOUSANDS + RAM_OFFSET] = _ram[SCORE_TEN_THOUSANDS];
+            state[SCORE_THOUSANDS + RAM_OFFSET] = _ram[SCORE_THOUSANDS];
+            state[SCORE_HUNDREDS + RAM_OFFSET] = _ram[SCORE_HUNDREDS];
+            state[SCORE_TENS + RAM_OFFSET] = _ram[SCORE_TENS];
+
+            Singleton.CSLibretro.LoadState(state);
         }
 
         #endregion
 
         #region Save State Creation
         /*
-        private bool _preRoundStarted;
-        private bool _roundStarted;
         private bool _deathOccurred;
-        private bool _waitingOnLoadingLevelTimer;
+        private int? _screenshotTimer;
+        private string _statePrefix;
 
         protected override void afterRunFrame()
         {
             base.afterRunFrame();
 
-            if (CreatingSaveStates)
+            if ((_ram[LEVEL_LOADING_STATE] == 0) && ((_lastFrameRAM[LIVES] - 1) == _ram[LIVES]))
+                _deathOccurred = true;
+
+            if (_deathOccurred && (_ram[LEVEL_LOADING_STATE] == 1))
             {
-                if (!_preRoundStarted && _ram[LEVEL_LOADING_1] == 1)
+                _deathOccurred = false;
+                _screenshotTimer = 0;
+
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, PLAYER_STATE);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 2 }, POWERUP_STATE);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 4 }, LIVES);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 90 }, COINS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_MILLIONS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_HUNDRED_THOUSANDS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_TEN_THOUSANDS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_THOUSANDS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_HUNDREDS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, SCORE_TENS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 9 }, COINS_DISPLAY_TENS);
+                Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, COINS_DISPLAY_ONES);
+
+                TourStopManifest tourStopManifest = _tourStopManifests.Where(tsm => ((tsm.World == _ram[WORLD]) && (tsm.Level == _ram[LEVEL]))).FirstOrDefault();
+                bool isPastCheckpoint = false;
+                if (tourStopManifest.CheckpointScreen > 0)
+                    isPastCheckpoint = _ram[CURRENT_SCREEN] >= tourStopManifest.CheckpointScreen ? true : false;
+
+                _statePrefix = string.Format(@"SMB {0}-{1}{2}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, isPastCheckpoint ? " (checkpoint)" : "");
+                string saveStateFilename = string.Format(@".\Contrib\Saves\{0}.ss", _statePrefix);
+                Singleton.CSLibretro.SaveState(saveStateFilename);
+
+                Debug.Log("Created save state: " + saveStateFilename);
+                Debug.Break();
+            }
+
+            if (_screenshotTimer.HasValue && (_ram[LEVEL_LOADING_STATE] == 3))
+            {
+                _screenshotTimer++;
+
+                if (_screenshotTimer == 4)
                 {
-                    Debug.Log("Pre-round started");
-                    _preRoundStarted = true;
-                }
+                    _screenshotTimer = null;
 
-                if (_preRoundStarted && !_roundStarted && _ram[LEVEL_LOADING_2] == 3)
-                {
-                    Debug.Log("Round started");
-                    _roundStarted = true;
-                }
+                    string screenshotFilename = string.Format(@".\Contrib\Saves\{0}.png", _statePrefix);
+                    Singleton.CSLibretro.SaveScreenshot(screenshotFilename);
 
-                if (_roundStarted && !_deathOccurred && _ram[LEVEL_LOADING_2] == 0)
-                {
-                    Debug.Log("Death occurred");
-                    _deathOccurred = true;
-                }
-
-                if (_deathOccurred && !_waitingOnLoadingLevelTimer && _ram[LEVEL_LOADING_2] == 1)
-                {
-                    Debug.Log("Set restart values, waiting on proper loading level timer");
-                    Singleton.CSLibretro.WriteRAM(new byte[] { 4 }, LIVES);
-                    _waitingOnLoadingLevelTimer = true;
-                }
-
-                if (_waitingOnLoadingLevelTimer && _ram[LEVEL_LOADING_TIMER] == 3)
-                {
-                    Singleton.CSLibretro.WriteRAM(new byte[] { 0 }, PLAYER_STATE);
-                    Singleton.CSLibretro.WriteRAM(new byte[] { 2 }, POWERUP_STATE);
-
-                    bool isPastCheckpoint = _ram[CURRENT_SCREEN] > 2 ? true : false;
-                    int world = _ram[WORLD] + 1;
-                    int level = _ram[LEVEL] + 1;
-
-                    string saveStateFilename = string.Format("SMB {0}-{1}{2}.ss", world, level, isPastCheckpoint ? " (checkpoint)" : "");
-
-                    Singleton.CSLibretro.SaveState(saveStateFilename);
-
-                    Debug.Log("State saved: " + saveStateFilename + ", waiting on next death");
-
-                    _roundStarted = false;
-                    _deathOccurred = false;
-                    _waitingOnLoadingLevelTimer = false;
-                }
-
-                if (Input.GetKeyDown(KeyCode.U))
-                {
-                    _deathOccurred = false;
-                    _waitingOnLoadingLevelTimer = false;
-                    Debug.Log("Reset death watch");
+                    Debug.Log("Screenshot taken: " + screenshotFilename);
                 }
             }
         }

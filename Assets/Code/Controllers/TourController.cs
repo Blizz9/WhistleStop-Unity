@@ -67,8 +67,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             foreach (TourStopController otherTourStop in _tourStops)
                 otherTourStop.Selected = otherTourStop == tourStop;
-
-            Singleton.CSLibretro.LoadState(tourStop.FilePath);
         }
 
         #endregion

@@ -107,6 +107,16 @@ namespace com.PixelismGames.CSLibretro
             get { return (_systemInfo.LibraryName); }
         }
 
+        public int ScreenHeight
+        {
+            get { return ((int)_systemAVInfo.Geometry.BaseHeight); }
+        }
+
+        public int ScreenWidth
+        {
+            get { return ((int)_systemAVInfo.Geometry.BaseWidth); }
+        }
+
         public string ValidExtensions
         {
             get { return (_systemInfo.ValidExtensions); }

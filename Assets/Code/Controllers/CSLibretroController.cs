@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using com.PixelismGames.CSLibretro;
@@ -84,8 +83,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _core.Load(ROM_NAME);
 
             AudioConfiguration audioConfiguration = AudioSettings.GetConfiguration();
-            //audioConfiguration.sampleRate = (int)_core.AudioSampleRate;
-            audioConfiguration.sampleRate = 31550; // should be _core.AudioSampleRate but this seems to match better, found by trial and error
+            audioConfiguration.sampleRate = (int)_core.AudioSampleRate;
             AudioSettings.Reset(audioConfiguration);
 
             // this is required for OnAudioFilterRead to work and needs to be done after setting the AudioSettings.outputSampleRate
@@ -98,29 +96,29 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 Singleton.UI.AddReportingItem(_audioSmoothedCount);
                 Singleton.UI.AddReportingItem(_audioRemainingSamples);
             }
+
+            _core.StartFrameTiming();
         }
 
         public void Update()
         {
-            if (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
+            foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
             {
-                //StartCoroutine(clockFrame());
+                if (UnityEngine.Input.GetButtonDown(input.JoypadInputID.ToString()))
+                    input.Value = 1;
 
+                if (UnityEngine.Input.GetButtonUp(input.JoypadInputID.ToString()))
+                    input.Value = 0;
+            }
+
+            if (_core.HasFramePeriodElapsed() && (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space)))
+            {
                 if (ShowReporting)
                     Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
 
                 if (BeforeRunFrame != null)
                     BeforeRunFrame();
-
-                List<JoypadInputID> validInputs = new List<JoypadInputID>() { JoypadInputID.Up, JoypadInputID.Down, JoypadInputID.Left, JoypadInputID.Right, JoypadInputID.Start, JoypadInputID.Select, JoypadInputID.A, JoypadInputID.B, JoypadInputID.X, JoypadInputID.Y };
-                foreach (CSLibretro.Input input in _core.Inputs.Where(i => (i.Port == 0) && (validInputs.Contains(i.JoypadInputID.Value))))
-                {
-                    if (UnityEngine.Input.GetButtonDown(input.JoypadInputID.ToString()))
-                        input.Value = 1;
-
-                    if (UnityEngine.Input.GetButtonUp(input.JoypadInputID.ToString()))
-                        input.Value = 0;
-                }
 
                 _core.RunFrame();
 
@@ -206,22 +204,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
                     bufferIndex += channels;
                 }
-            }
-        }
-
-        #endregion
-
-        #region Timing
-
-        private IEnumerator clockFrame()
-        {
-            yield return new WaitForEndOfFrame();
-
-            if (!IsFastForwarding)
-            {
-                _core.StopFrameTiming();
-                _core.SleepRemainingFrameTime();
-                _core.StartFrameTiming();
             }
         }
 

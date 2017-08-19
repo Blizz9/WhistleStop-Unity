@@ -220,7 +220,7 @@ namespace com.PixelismGames.CSLibretro
 
             while (IsRunning)
             {
-                StartFrameTiming();
+                RestartFrameTiming();
 
                 _run();
 
@@ -244,13 +244,38 @@ namespace com.PixelismGames.CSLibretro
 
         public void StartFrameTiming()
         {
-            _frameTimer.Reset();
             _frameTimer.Start();
+        }
+
+        public void RestartFrameTiming()
+        {
+            _frameTimer.Reset();
+            StartFrameTiming();
         }
 
         public void StopFrameTiming()
         {
             _frameTimer.Stop();
+        }
+
+        public bool HasFramePeriodElapsed()
+        {
+            long frameElapsedNanoseconds = (long)(((double)_frameTimer.ElapsedTicks / (double)Stopwatch.Frequency) * 1000000000);
+
+            if ((frameElapsedNanoseconds + _frameLeftoverNanoseconds) > _framePeriodNanoseconds)
+            {
+                RestartFrameTiming();
+
+                _frameLeftoverNanoseconds += frameElapsedNanoseconds - _framePeriodNanoseconds;
+
+                // not interested in tracking leftover nanoseconds in extreme situations
+                if ((_frameLeftoverNanoseconds < 0) || (_frameLeftoverNanoseconds >= _framePeriodNanoseconds))
+                    _frameLeftoverNanoseconds = 0;
+
+                return (true);
+            }
+
+            return (false);
         }
 
         public void SleepRemainingFrameTime()
@@ -410,11 +435,11 @@ namespace com.PixelismGames.CSLibretro
 
                 do
                 {
-					int length;
-					if (_os == OS.OSX)
-                    	length = OSXAPI.snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-					else
-						length = WindowsAPI._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    int length;
+                    if (_os == OS.OSX)
+                        length = OSXAPI.snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    else
+                        length = WindowsAPI._snprintf(logMessage, (uint)logMessage.Capacity, fmt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
                     if ((length <= 0) || (length >= logMessage.Capacity))
                     {

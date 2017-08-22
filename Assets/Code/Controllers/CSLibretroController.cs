@@ -13,8 +13,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {
-        public const float PIXELS_PER_UNIT = 1f;
-
         #if UNITY_STANDALONE_OSX
         //private const string DLL_NAME = @"./Contrib/Cores/snes9x_libretro.dylib";
         private const string DLL_NAME = @"./Contrib/Cores/fceumm_libretro.dylib";
@@ -284,7 +282,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
             if (Singleton.Screen.sprite == null)
             {
-                Singleton.Screen.sprite = Sprite.Create(videoFrameTexture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), PIXELS_PER_UNIT);
+                Singleton.Screen.sprite = Sprite.Create(videoFrameTexture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), Singleton.PIXELS_PER_UNIT);
                 Singleton.Screen.sprite.texture.filterMode = FilterMode.Point;
             }
             else
@@ -307,9 +305,9 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _core.WriteRAM(data, offset);
         }
 
-        public void LoadState(string saveStateFilePath)
+        public void LoadState(string stateFilePath)
         {
-            _core.LoadState(saveStateFilePath);
+            _core.LoadState(stateFilePath);
         }
 
         public void LoadState(byte[] state)
@@ -319,9 +317,9 @@ namespace com.PixelismGames.WhistleStop.Controllers
             pinnedState.Free();
         }
 
-        public void SaveState(string saveStateFilePath)
+        public void SaveState(string stateFilePath)
         {
-            _core.SaveState(saveStateFilePath);
+            _core.SaveState(stateFilePath);
         }
 
         public void SaveScreenshot(string screenshotFilePath)

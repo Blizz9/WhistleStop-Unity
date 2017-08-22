@@ -5,6 +5,8 @@ namespace com.PixelismGames.WhistleStop.Utilities
 {
     public static class Singleton
     {
+        public const float PIXELS_PER_UNIT = 1f;
+
         private static Camera _camera;
         private static SpriteRenderer _screen;
         private static CSLibretroController _csLibretro;

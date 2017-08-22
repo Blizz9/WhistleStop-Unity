@@ -6,10 +6,12 @@ using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
-    // TODO : Get rid of SMB prefix on savestates
+    // TODO : Fix issue with check point level not loading right if selected before starting the game
     [AddComponentMenu("Pixelism Games/Controllers/Tours/SMB Tour Controller")]
     public class SMBTourController : TourController
     {
+        private const string TOUR_DIRECTORY = "./Contrib/SMBTour/";
+
         private class TourStopManifest
         {
             public int World;
@@ -61,6 +63,38 @@ namespace com.PixelismGames.WhistleStop.Controllers
         {
             base.Start();
 
+            #region Reporting Items
+
+            if (ShowReporting)
+            {
+                addReportingItem(0x0009, "Frames");
+                addReportingItem(0x000E, "Player State");
+                addReportingItem(0x0033, "Facing");
+                addReportingItem(MOVING_DIRECTION, "Moving Direction");
+                addReportingItem(0x0057, "Horizontal Speed");
+                addReportingItem(0x006D, "Horizontal Position");
+                addReportingItem(0x0086, "X on Screen");
+                addReportingItem(0x00CE, "Y on Screen");
+                addReportingItem(0x00E7, "Level Layout Address");
+                addReportingItem(CURRENT_SCREEN, "Current Screen");
+                addReportingItem(0x071B, "Next Screen");
+                addReportingItem(0x071C, "Screen Edge");
+                addReportingItem(0x072C, "Level Layout Index?");
+                addReportingItem(INPUTS, "Inputs");
+                addReportingItem(0x0750, "Area Offset");
+                addReportingItem(POWERUP_STATE, "Powerup State");
+                addReportingItem(0x0757, "Pre-level Flag");
+                addReportingItem(LIVES, "Lives");
+                addReportingItem(LEVEL, "Level");
+                addReportingItem(GAME_LOADING_STATE, "Game Loading State");
+                addReportingItem(LEVEL_LOADING_STATE, "Level Loading State");
+                addReportingItem(0x0773, "Level Palette");
+                addReportingItem(PLAYER_COUNT, "Player Count");
+                addReportingItem(LEVEL_LOADING_TIMER, "Level Loading Timer");
+            }
+
+            #endregion
+
             _tourStopManifests = new List<TourStopManifest>();
             _tourStopManifests.Add(new TourStopManifest(0, 1, 0, 1, 5));
             _tourStopManifests.Add(new TourStopManifest(0, 1, 0, 1, 0));
@@ -76,95 +110,66 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _tourStopManifests.Add(new TourStopManifest(1, 2, 3, 3, 7));
             _tourStopManifests.Add(new TourStopManifest(1, 2, 3, 3, 0));
             _tourStopManifests.Add(new TourStopManifest(1, 2, 4, 4, 0));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 0, 1, 6));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 0, 1, 0));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 1, 2, 6));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 1, 2, 0));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 2, 3, 4));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 2, 3, 0));
+            _tourStopManifests.Add(new TourStopManifest(2, 3, 3, 4, 0));
 
             _tourStops = new List<TourStopController>();
             foreach (TourStopManifest tourStopManifest in _tourStopManifests)
             {
                 TourStopController tourStop = Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>();
                 tourStop.Tour = this;
-                if ((tourStopManifest.LevelDisplay == 4) || (tourStopManifest.CheckpointScreen != 0))
-                {
-                    tourStop.FilePath = string.Format(@".\Contrib\SMBTour\SMB {0}-{1}.ss", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
-                    tourStop.LoadScreenshot(string.Format(@".\Contrib\SMBTour\SMB {0}-{1}.png", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay));
-                    tourStop.Description = string.Format("World {0}-{1}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
-                }
-                else
-                {
-                    tourStop.FilePath = string.Format(@".\Contrib\SMBTour\SMB {0}-{1} (checkpoint).ss", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
-                    tourStop.LoadScreenshot(string.Format(@".\Contrib\SMBTour\SMB {0}-{1} (checkpoint).png", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay));
-                    tourStop.Description = string.Format("World {0}-{1} (checkpoint)", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay);
-                }
+
+                string checkpointSuffix = string.Empty;
+                if ((tourStopManifest.LevelDisplay != 4) && (tourStopManifest.CheckpointScreen == 0))
+                    checkpointSuffix = " (checkpoint)";
+
+                tourStop.FilePath = string.Format("{0}{1}-{2}{3}.{4}", TOUR_DIRECTORY, tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, checkpointSuffix, STATE_EXTENSION);
+                tourStop.LoadScreenshot(string.Format("{0}{1}-{2}{3}.{4}", TOUR_DIRECTORY, tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, checkpointSuffix, SCREENSHOT_EXTENSION));
+                tourStop.Description = string.Format("World {0}-{1}{2}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, checkpointSuffix);
+
                 _tourStops.Add(tourStop);
 
                 tourStopManifest.TourStop = tourStop;
             }
 
             _tourStops[_tourStopIndex].Selected = true;
-
-            #region Reporting Items
-
-            if (ShowReporting)
-            {
-                addReportingItem(0x0009, "Frames");
-                addReportingItem(0x000E, "Player State");
-                addReportingItem(0x0033, "Facing");
-                addReportingItem(MOVING_DIRECTION, "Moving Direction");
-                addReportingItem(0x0057, "Horizontal Speed");
-                addReportingItem(0x006D, "Horizontal Position");
-                addReportingItem(0x0086, "X on Screen");
-                addReportingItem(0x00CE, "Y on Screen");
-                addReportingItem(0x00E7, "Level Layout Address");
-                addReportingItem(0x06D6, "Warpzone Control?");
-                addReportingItem(CURRENT_SCREEN, "Current Screen");
-                addReportingItem(0x071B, "Next Screen");
-                addReportingItem(0x071C, "Screen Edge");
-                addReportingItem(0x072C, "Level Layout Index?");
-                addReportingItem(INPUTS, "Inputs");
-                addReportingItem(0x0750, "Area Offset");
-                addReportingItem(POWERUP_STATE, "Powerup State");
-                addReportingItem(0x0757, "Pre-level Flag");
-                addReportingItem(LIVES, "Lives");
-                addReportingItem(LEVEL, "Level");
-                addReportingItem(GAME_LOADING_STATE, "Level Loading 1");
-                addReportingItem(LEVEL_LOADING_STATE, "Level Loading State");
-                addReportingItem(0x0773, "Level Palette");
-                addReportingItem(PLAYER_COUNT, "Player Count");
-                addReportingItem(LEVEL_LOADING_TIMER, "Level Loading Timer");
-            }
-
-            #endregion
         }
 
         public void Update()
         {
             if (Input.GetKeyDown(KeyCode.Alpha1))
-                Singleton.CSLibretro.SaveState(@".\Contrib\Saves\temp.ss");
+                Singleton.CSLibretro.SaveState(STATES_DIRECTORY + "temp" + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha2))
-                Singleton.CSLibretro.LoadState(@".\Contrib\Saves\temp.ss");
+                Singleton.CSLibretro.LoadState(STATES_DIRECTORY + "temp" + STATE_EXTENSION);
 
-            //if (Input.GetKeyDown(KeyCode.Alpha3) && !string.IsNullOrEmpty(_statePrefix))
+            //if (Input.GetKeyDown(KeyCode.Alpha3) && !string.IsNullOrEmpty(_stateName))
             //{
-            //    string screenshotFilename = string.Format(@".\Contrib\Saves\{0}.png", _statePrefix);
+            //    string screenshotFilename = string.Format("{0}{1}.{2}", STATES_DIRECTORY, _stateName, SCREENSHOT_EXTENSION);
             //    Singleton.CSLibretro.SaveScreenshot(screenshotFilename);
 
             //    Debug.Log("Screenshot taken: " + screenshotFilename);
             //}
 
             if (Input.GetKeyDown(KeyCode.Alpha4))
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 1-4.ss");
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha5))
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-1.ss");
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha6))
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-2.ss");
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha7))
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-3.ss");
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha8))
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB 2-4.ss");
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
         }
 
         #endregion
@@ -181,7 +186,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             if ((_lastFrameRAM[GAME_LOADING_STATE] == 0) && (_ram[GAME_LOADING_STATE] == 1))
             {
                 Debug.Log("Game Started, Loading Tour Stop: Start");
-                Singleton.CSLibretro.LoadState(@".\Contrib\SMBTour\SMB Start.ss");
+                Singleton.CSLibretro.LoadState(string.Format("{0}Start.{1}", TOUR_DIRECTORY, STATE_EXTENSION));
             }
 
             if ((_ram[LEVEL_LOADING_STATE] == 3) && ((_lastFrameRAM[CURRENT_SCREEN] + 1) == _ram[CURRENT_SCREEN]) && (_ram[CURRENT_SCREEN] == _tourStopManifests[_tourStopIndex].CheckpointScreen))
@@ -264,11 +269,11 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         #endregion
 
-        #region Save State Creation
+        #region State Creation
         /*
         private bool _deathOccurred;
         private int? _screenshotTimer;
-        private string _statePrefix;
+        private string _stateName;
 
         protected override void afterRunFrame()
         {
@@ -300,12 +305,11 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 if (tourStopManifest.CheckpointScreen > 0)
                     isPastCheckpoint = _ram[CURRENT_SCREEN] >= tourStopManifest.CheckpointScreen ? true : false;
 
-                _statePrefix = string.Format(@"SMB {0}-{1}{2}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, isPastCheckpoint ? " (checkpoint)" : "");
-                string saveStateFilename = string.Format(@".\Contrib\Saves\{0}.ss", _statePrefix);
-                Singleton.CSLibretro.SaveState(saveStateFilename);
+                _stateName = string.Format(@"{0}-{1}{2}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, isPastCheckpoint ? " (checkpoint)" : "");
+                string stateFilename = string.Format("{0}{1}.{2}", STATES_DIRECTORY, _stateName, STATE_EXTENSION);
+                Singleton.CSLibretro.SaveState(stateFilename);
 
-                Debug.Log("Created save state: " + saveStateFilename);
-                Debug.Break();
+                Debug.Log("Saved state: " + stateFilename);
             }
 
             if (_screenshotTimer.HasValue && (_ram[LEVEL_LOADING_STATE] == 3))
@@ -316,7 +320,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 {
                     _screenshotTimer = null;
 
-                    string screenshotFilename = string.Format(@".\Contrib\Saves\{0}.png", _statePrefix);
+                    string screenshotFilename = string.Format("{0}{1}.{2}", STATES_DIRECTORY, _stateName, SCREENSHOT_EXTENSION);
                     Singleton.CSLibretro.SaveScreenshot(screenshotFilename);
 
                     Debug.Log("Screenshot taken: " + screenshotFilename);

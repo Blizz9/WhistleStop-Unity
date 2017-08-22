@@ -61,7 +61,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             screenshotTexture.LoadImage(File.ReadAllBytes(path));
             screenshotTexture.Apply();
 
-            _screenshot.sprite = Sprite.Create(screenshotTexture, new Rect(0f, 0f, Singleton.CSLibretro.ScreenWidth, Singleton.CSLibretro.ScreenHeight), new Vector2(0.5f, 0.5f), CSLibretroController.PIXELS_PER_UNIT);
+            _screenshot.sprite = Sprite.Create(screenshotTexture, new Rect(0f, 0f, Singleton.CSLibretro.ScreenWidth, Singleton.CSLibretro.ScreenHeight), new Vector2(0.5f, 0.5f), Singleton.PIXELS_PER_UNIT);
             _screenshot.sprite.texture.filterMode = FilterMode.Trilinear;
         }
 

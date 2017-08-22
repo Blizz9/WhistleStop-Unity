@@ -7,6 +7,10 @@ namespace com.PixelismGames.WhistleStop.Controllers
     [AddComponentMenu("")]
     public class TourController : MonoBehaviour
     {
+        public const string STATES_DIRECTORY = "./Contrib/States/";
+        public const string STATE_EXTENSION = "state";
+        public const string SCREENSHOT_EXTENSION = "png";
+
         protected List<TourReportingItem> _reportingItems;
         protected byte[] _ram;
         protected byte[] _lastFrameRAM;

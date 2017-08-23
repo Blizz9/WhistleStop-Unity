@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
+    // TODO : Implement a visual progress system in the UI, like cookie trail to show when you pass each screen in SMB?
+    // TODO : Implement a go-back position (with screenshot) when the user clicks a tour stop?
     [AddComponentMenu("")]
     public class TourController : MonoBehaviour
     {

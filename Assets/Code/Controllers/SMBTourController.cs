@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
-    // TODO : Fix issue with check point level not loading right if selected before starting the game
     [AddComponentMenu("Pixelism Games/Controllers/Tours/SMB Tour Controller")]
     public class SMBTourController : TourController
     {
@@ -56,6 +55,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         private List<TourStopManifest> _tourStopManifests;
         private int _tourStopIndex;
+
+        private bool _skipFrame;
 
         #region MonoBehaviour
 
@@ -117,6 +118,13 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _tourStopManifests.Add(new TourStopManifest(2, 3, 2, 3, 4));
             _tourStopManifests.Add(new TourStopManifest(2, 3, 2, 3, 0));
             _tourStopManifests.Add(new TourStopManifest(2, 3, 3, 4, 0));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 0, 1, 6));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 0, 1, 0));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 2, 2, 6));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 2, 2, 0));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 3, 3, 4));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 3, 3, 0));
+            _tourStopManifests.Add(new TourStopManifest(3, 4, 4, 4, 0));
 
             _tourStops = new List<TourStopController>();
             foreach (TourStopManifest tourStopManifest in _tourStopManifests)
@@ -157,19 +165,19 @@ namespace com.PixelismGames.WhistleStop.Controllers
             //}
 
             if (Input.GetKeyDown(KeyCode.Alpha4))
-                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "3-4." + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha5))
-                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "4-1." + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha6))
-                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "4-2." + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha7))
-                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "4-3." + STATE_EXTENSION);
 
             if (Input.GetKeyDown(KeyCode.Alpha8))
-                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "2-4" + STATE_EXTENSION);
+                Singleton.CSLibretro.LoadState(TOUR_DIRECTORY + "4-4." + STATE_EXTENSION);
         }
 
         #endregion
@@ -179,6 +187,12 @@ namespace com.PixelismGames.WhistleStop.Controllers
         protected override void afterRunFrame()
         {
             base.afterRunFrame();
+
+            if (_skipFrame)
+            {
+                _skipFrame = false;
+                return;
+            }
 
             if ((_lastFrameRAM[PLAYER_COUNT] == 0) && (_ram[PLAYER_COUNT] == 1))
                 Singleton.UI.SetStatus("Sorry, this tour does not support 2 players");
@@ -237,6 +251,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _tourStopIndex = _tourStops.IndexOf(tourStop);
 
             loadTourStopWithInjection(tourStop);
+
+            _skipFrame = true;
         }
 
         #endregion

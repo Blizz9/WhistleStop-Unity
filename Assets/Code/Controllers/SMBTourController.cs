@@ -129,7 +129,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _tourStops = new List<TourStopController>();
             foreach (TourStopManifest tourStopManifest in _tourStopManifests)
             {
-                TourStopController tourStop = Instantiate(Singleton.UI.TourStopPrefab, Singleton.UI.TourStopParent.transform).GetComponent<TourStopController>();
+                TourStopController tourStop = Singleton.UI.CreateTourStop();
                 tourStop.Tour = this;
 
                 string checkpointSuffix = string.Empty;

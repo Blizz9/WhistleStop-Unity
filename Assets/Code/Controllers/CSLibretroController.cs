@@ -40,8 +40,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
         public bool ShowReporting;
 
         private long _audioSmoothedCountValue;
-        private UIReportingItem _audioSmoothedCount;
-        private UIReportingItem _audioRemainingSamples;
+        private ReportingItemController _audioSmoothedCount;
+        private ReportingItemController _audioRemainingSamples;
 
         public event Action BeforeRunFrame;
         public event Action AfterRunFrame;
@@ -99,10 +99,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
             if (ShowReporting)
             {
-                _audioSmoothedCount = new UIReportingItem() { Name = "Smoothed Count" };
-                _audioRemainingSamples = new UIReportingItem() { Name = "Remaining Samples" };
-                Singleton.UI.AddReportingItem(_audioSmoothedCount);
-                Singleton.UI.AddReportingItem(_audioRemainingSamples);
+                _audioSmoothedCount = Singleton.UI.CreateReportingItem("Smoothed Count");
+                _audioRemainingSamples = Singleton.UI.CreateReportingItem("Remaining Samples");
             }
 
             _core.StartFrameTiming();
@@ -144,7 +142,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
             if (_core.HasFramePeriodElapsed() && (!IsStepping || UnityEngine.Input.GetKeyDown(KeyCode.Space)))
             {
                 if (ShowReporting)
-                    Singleton.UI.SetReportingItemValue(_audioSmoothedCount, _audioSmoothedCountValue);
+                    _audioSmoothedCount.Value = _audioSmoothedCountValue;
 
                 if (BeforeRunFrame != null)
                     BeforeRunFrame();
@@ -249,7 +247,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 {
                     if (ShowReporting)
                         if (_core.FrameCount % 60 == 0)
-                            Singleton.UI.SetReportingItemValue(_audioRemainingSamples, _audioSampleBuffer.Count);
+                            _audioRemainingSamples.Value = _audioSampleBuffer.Count;
 
                     _audioSampleBuffer.AddRange(samples.Select(s => (float)((double)s / (double)short.MaxValue)).ToList());
                 }

@@ -13,7 +13,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
         public const string STATE_EXTENSION = "state";
         public const string SCREENSHOT_EXTENSION = "png";
 
-        protected List<TourReportingItem> _reportingItems;
+        protected List<ReportingItemController> _reportingItems;
         protected byte[] _ram;
         protected byte[] _lastFrameRAM;
 
@@ -25,7 +25,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         public virtual void Awake()
         {
-            _reportingItems = new List<TourReportingItem>();
+            _reportingItems = new List<ReportingItemController>();
         }
 
         public virtual void Start()
@@ -47,8 +47,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
             _lastFrameRAM = _ram == null ? Singleton.CSLibretro.ReadRAM() : _ram;
             _ram = Singleton.CSLibretro.ReadRAM();
 
-            foreach (TourReportingItem reportingItem in _reportingItems)
-                reportingItem.Text.text = string.Format("{0:X4} {1}: {2}", reportingItem.Address, reportingItem.Name, _ram[reportingItem.Address]);
+            foreach (ReportingItemController reportingItem in _reportingItems)
+                reportingItem.Value = _ram[reportingItem.Address.Value];
         }
 
         #endregion
@@ -57,10 +57,8 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         protected void addReportingItem(int address, string name)
         {
-            TourReportingItem reportingItem = new TourReportingItem();
+            ReportingItemController  reportingItem = Singleton.UI.CreateReportingItem(name);
             reportingItem.Address = address;
-            reportingItem.Name = name;
-            Singleton.UI.AddReportingItem(reportingItem);
 
             _reportingItems.Add(reportingItem);
         }
@@ -76,10 +74,5 @@ namespace com.PixelismGames.WhistleStop.Controllers
         }
 
         #endregion
-    }
-
-    public class TourReportingItem : UIReportingItem
-    {
-        public int Address;
     }
 }

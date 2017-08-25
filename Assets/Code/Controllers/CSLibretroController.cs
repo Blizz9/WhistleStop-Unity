@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace com.PixelismGames.WhistleStop.Controllers
 {
+    // TODO : Fix fast forwarding
     [AddComponentMenu("Pixelism Games/Controllers/CSLibretro Controller")]
     public class CSLibretroController : MonoBehaviour
     {

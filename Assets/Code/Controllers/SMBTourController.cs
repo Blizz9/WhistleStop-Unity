@@ -18,7 +18,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
             public int Level;
             public int LevelDisplay;
             public int CheckpointScreen;
-            public TourStopController TourStop;
 
             public TourStopManifest(int world, int worldDisplay, int level, int levelDisplay, int checkpointScreen)
             {
@@ -141,8 +140,6 @@ namespace com.PixelismGames.WhistleStop.Controllers
                 tourStop.Description = string.Format("World {0}-{1}{2}", tourStopManifest.WorldDisplay, tourStopManifest.LevelDisplay, checkpointSuffix);
 
                 _tourStops.Add(tourStop);
-
-                tourStopManifest.TourStop = tourStop;
             }
 
             _tourStops[_tourStopIndex].Selected = true;

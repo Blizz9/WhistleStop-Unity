@@ -19,7 +19,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
 
         protected List<TourStopController> _tourStops;
 
-        public bool ShowReporting;
+        public bool ShowReporting = true;
 
         #region MonoBehaviour
 

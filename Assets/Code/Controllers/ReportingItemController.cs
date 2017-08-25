@@ -29,8 +29,20 @@ namespace com.PixelismGames.WhistleStop.Controllers
             get { return (_value); }
             set
             {
-                _value = value;
-                setText();
+                if (_address.HasValue)
+                {
+                    if (value != _value)
+                    {
+                        _value = value;
+                        _text.color = Color.red;
+                        setText();
+                    }
+                }
+                else
+                {
+                    _value = value;
+                    setText();
+                }
             }
         }
 
@@ -51,6 +63,12 @@ namespace com.PixelismGames.WhistleStop.Controllers
         public void Awake()
         {
             _text = GetComponent<Text>();
+        }
+
+        public void Update()
+        {
+            if (_text.color.g < 1f)
+                _text.color = new Color(_text.color.r, Mathf.Clamp01(_text.color.g + (Time.deltaTime * 0.35f)), Mathf.Clamp01(_text.color.b + (Time.deltaTime * 0.35f)), _text.color.a);
         }
 
         #endregion

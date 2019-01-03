@@ -4,6 +4,7 @@
 .vs
 obj
 Library
+Logs
 Temp
 .DS_Store
 Contrib

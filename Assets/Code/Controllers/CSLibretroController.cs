@@ -24,6 +24,7 @@ namespace com.PixelismGames.WhistleStop.Controllers
         #else
         //private const string DLL_NAME = @".\Contrib\Cores\snes9x_libretro.dll";
         private const string DLL_NAME = @".\Contrib\Cores\fceumm_libretro.dll";
+        //private const string DLL_NAME = @".\Contrib\Cores\nestopia_libretro.dll";
         //private const string DLL_NAME = @".\Contrib\Cores\gambatte_libretro.dll";
         //private const string ROM_NAME = @".\Contrib\ROMs\smw.sfc";
         private const string ROM_NAME = @".\Contrib\ROMs\smb.nes";
@@ -270,8 +271,14 @@ namespace com.PixelismGames.WhistleStop.Controllers
                     textureFormat = TextureFormat.RGB565;
                     break;
 
+                case PixelFormat.XRGB8888:
+                    textureFormat = TextureFormat.BGRA32;
+                    for (int i = 3; i < frameBuffer.Length; i += 4)
+                        frameBuffer[i] = 255;
+                    break;
+
                 default:
-                    textureFormat = TextureFormat.ARGB32;
+                    textureFormat = TextureFormat.RGBA32;
                     break;
             }
 
